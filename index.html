@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZenGlish: AI English Learning Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+      }
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .animate-fade-in-up {
+        animation: fade-in-up 0.3s ease-out forwards;
+      }
+      @keyframes fade-in-scale {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-fade-in-scale {
+        animation: fade-in-scale 0.4s ease-out forwards;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                DEFAULT: '#4F46E5', // indigo-600
+                light: '#6366F1',   // indigo-500
+                dark: '#4338CA',    // indigo-700
+              },
+              secondary: {
+                DEFAULT: '#06B6D4', // cyan-500
+                light: '#22D3EE',   // cyan-400
+                dark: '#0891B2',    // cyan-600
+              },
+              accent: {
+                DEFAULT: '#F59E0B', // amber-500
+              },
+              light: {
+                bg: '#F9FAFB',      // gray-50
+                card: '#FFFFFF',
+              },
+              dark: {
+                bg: '#111827',      // gray-900
+                card: '#1F2937',    // gray-800
+              }
+            },
+            animation: {
+              'fade-in': 'fade-in 0.3s ease-out forwards',
+              'fade-in-up': 'fade-in-up 0.3s ease-out forwards',
+              'fade-in-scale': 'fade-in-scale 0.4s ease-out forwards',
+            },
+            keyframes: {
+              'fade-in': {
+                'from': { opacity: 0 },
+                'to': { opacity: 1 },
+              },
+              'fade-in-up': {
+                'from': { opacity: 0, transform: 'translateY(20px) scale(0.98)' },
+                'to': { opacity: 1, transform: 'translateY(0) scale(1)' },
+              },
+              'fade-in-scale': {
+                'from': { opacity: 0, transform: 'scale(0.8)' },
+                'to': { opacity: 1, transform: 'scale(1)' },
+              },
+            }
+          }
+        }
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0"
+  }
+}
+</script>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg">
+    <div id="root"></div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "ZenGlish: AI English Learning Hub",
+  "description": "An interactive application for learning English, featuring essential Oxford vocabulary, common phrases, flashcards, quizzes, and AI-powered assistance for pronunciation and grammar, inspired by TFLAT's user-friendly design.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
