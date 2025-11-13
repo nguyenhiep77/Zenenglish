@@ -5,27 +5,53 @@ const STORAGE_KEY = 'zenglish_custom_lessons';
 export const getCustomLessons = (): CustomLesson[] => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
-        const lessons = data ? JSON.parse(data) : [];
+        let lessons: CustomLesson[] = data ? JSON.parse(data) : [];
 
-        // If no lessons exist in storage, create a default one.
-        if (lessons.length === 0) {
-            const defaultLesson: CustomLesson = {
-                id: 'default-greetings-lesson-1', // Use a fixed ID to prevent duplicates
+        const defaultLessons: CustomLesson[] = [
+            {
+                id: 'default-daily-routines-lesson-1',
+                name: 'Daily Routines',
+                description: 'Essential vocabulary for talking about your daily life.',
+                vocabularyIds: [642, 525, 33, 34, 40, 41, 35, 5, 10, 331, 464, 26, 641, 548, 626], // wake up, breakfast, eat, drink, work, study, go, school, house, evening, afternoon, night, sleep, clean, read
+                createdDate: new Date().toISOString(),
+            },
+            {
+                id: 'default-greetings-lesson-1',
                 name: 'Basic Greetings',
                 description: 'A starter lesson with common greeting words.',
-                vocabularyIds: [4, 8, 17], // Corrected IDs: 'book', 'friend', 'love'
+                vocabularyIds: [24, 25, 26, 331, 464, 8], // name, day, night, evening, afternoon, friend
                 createdDate: new Date().toISOString(),
-            };
-            saveCustomLessons([defaultLesson]);
-            return [defaultLesson];
+            }
+        ];
+
+        // If no lessons exist in storage, create the default ones.
+        if (lessons.length === 0) {
+            saveCustomLessons(defaultLessons);
+            return defaultLessons;
         }
 
+        // For backward compatibility, check if default lessons exist and add if not.
+        // This ensures existing users get the new default lessons.
+        let needsSave = false;
+        defaultLessons.forEach(defaultLesson => {
+            if (!lessons.some(l => l.id === defaultLesson.id)) {
+                // Add new default lessons to the beginning of the list
+                lessons.unshift(defaultLesson);
+                needsSave = true;
+            }
+        });
+
+        if (needsSave) {
+            saveCustomLessons(lessons);
+        }
+        
         return lessons;
     } catch (error) {
         console.error("Failed to parse or create custom lessons", error);
         return [];
     }
 };
+
 
 export const saveCustomLessons = (lessons: CustomLesson[]): void => {
     try {

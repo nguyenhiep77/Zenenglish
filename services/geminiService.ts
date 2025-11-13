@@ -1,5 +1,5 @@
-import { GoogleGenAI, Type, Content } from "@google/genai";
-import { PronunciationFeedback, SentenceFeedback, Example, WordDetails, Conversation, ConversationLine, Level, Word, Sentence, Mistake } from '../types';
+import { GoogleGenAI, Type, Content, Chat } from "@google/genai";
+import { PronunciationFeedback, SentenceFeedback, Example, WordDetails, Conversation, ConversationLine, Level, Word, Sentence, Mistake, ProsodyFeedback } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -144,17 +144,24 @@ export const checkPronunciation = async (targetText: string, userTranscript: str
     - User's spoken phrase: "${userTranscript}"
 
     Your tasks:
-    1.  Score the pronunciation from 0 to 100 based on accuracy, clarity, and native-like sound.
-    2.  Provide brief, encouraging overall feedback.
-    3.  If there are errors, identify specific words with incorrect phonemes. For each, provide the incorrect sound (e.g., /æ/) and a simple, actionable suggestion for a Vietnamese speaker (e.g., "Open your mouth wider").
-    4.  Give 1-2 general suggestions for improvement (e.g., focusing on rhythm, intonation, or specific sounds).
+    1.  **Score**: Rate the overall pronunciation from 0 to 100 based on accuracy and clarity.
+    2.  **Overall Feedback**: Provide brief, encouraging overall feedback.
+    3.  **Phonetic Feedback**: Identify specific words with mispronounced phonemes. For each, provide the target 'correctPhoneme', the 'userPhoneme' that was detected, and a simple, actionable 'suggestion'.
+    4.  **Prosody (For Sentences Only)**: If the target phrase is a full sentence, provide specific feedback on its prosody as a JSON object. If a specific aspect is good, say so.
+        - "rhythm": Comment on the flow, pacing, and timing.
+        - "intonation": Comment on the pitch contour (e.g., rising for questions, falling for statements).
+        - "wordStress": Comment on the emphasis of key content words.
+    5.  **Linking Sounds (For Sentences Only)**: If the target is a sentence, comment on the use of linking sounds (liaison) between words, if applicable (e.g., in "check it out").
+    6.  **General Suggestions**: Give 1-2 high-level suggestions for improvement.
 
-    Return a single JSON object with the exact structure:
+    Return a single JSON object with this exact structure. If a feedback type is not applicable (e.g., prosody for a single word), omit the key or provide an empty string/array.
     {
       "score": number,
       "feedback": string,
-      "suggestions": string[],
-      "phoneticFeedback": [{ "word": string, "incorrectPhoneme": string, "suggestion": string }]
+      "phoneticFeedback": [{ "word": string, "correctPhoneme": string, "userPhoneme": string, "suggestion": string }],
+      "rhythmAndIntonationFeedback": { "rhythm": string, "intonation": string, "wordStress": string },
+      "linkingFeedback": string,
+      "suggestions": string[]
     }`;
 
     try {
@@ -175,12 +182,22 @@ export const checkPronunciation = async (targetText: string, userTranscript: str
                                 type: Type.OBJECT,
                                 properties: {
                                     word: { type: Type.STRING },
-                                    incorrectPhoneme: { type: Type.STRING },
+                                    correctPhoneme: { type: Type.STRING },
+                                    userPhoneme: { type: Type.STRING },
                                     suggestion: { type: Type.STRING },
                                 },
-                                required: ["word", "incorrectPhoneme", "suggestion"]
+                                required: ["word", "correctPhoneme", "userPhoneme", "suggestion"]
                             }
-                        }
+                        },
+                        rhythmAndIntonationFeedback: {
+                            type: Type.OBJECT,
+                            properties: {
+                                rhythm: { type: Type.STRING },
+                                intonation: { type: Type.STRING },
+                                wordStress: { type: Type.STRING },
+                            },
+                        },
+                        linkingFeedback: { type: Type.STRING },
                     },
                     required: ["score", "feedback", "suggestions"]
                 }
@@ -287,7 +304,6 @@ export const checkUserSentence = async (wordToUse: string, userSentence: string)
     }
 };
 
-// Fix: Implement getWordDetails function
 export const getWordDetails = async (word: string): Promise<{ details?: WordDetails, error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
 
@@ -373,7 +389,6 @@ export const getWordDetails = async (word: string): Promise<{ details?: WordDeta
     }
 };
 
-// Fix: Implement parseAndTranslateConversation function
 export const parseAndTranslateConversation = async (rawText: string, title: string, category: string): Promise<{ conversation?: Omit<Conversation, 'id' | 'isCustom' | 'lines'> & { lines: Omit<ConversationLine, 'audioUrl' | 'ipa'>[] }, error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
 
@@ -385,7 +400,7 @@ export const parseAndTranslateConversation = async (rawText: string, title: stri
     ${rawText}
     ---
 
-    Your tasks:
+    Your tasks are:
     1.  Parse the raw text into a structured list of conversation lines, identifying the speaker and their sentence.
     2.  Translate each English sentence into natural-sounding Vietnamese.
     3.  Estimate the overall CEFR level of the conversation (A1, A2, B1, B2, C1, or C2).
@@ -445,7 +460,6 @@ export const parseAndTranslateConversation = async (rawText: string, title: stri
     }
 };
 
-// Fix: Implement generateExampleSentences function
 export const generateExampleSentences = async (word: string): Promise<{ examples?: Example[], error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
 
@@ -493,7 +507,6 @@ export const generateExampleSentences = async (word: string): Promise<{ examples
     }
 };
 
-// Fix: Implement generateGrammarExplanation function
 export const generateGrammarExplanation = async (sentence: string): Promise<string> => {
     if (!ai) return "Đã xảy ra lỗi: Gemini AI is not available.";
 
@@ -513,7 +526,6 @@ export const generateGrammarExplanation = async (sentence: string): Promise<stri
     }
 };
 
-// Fix: Implement refineVietnameseMeaning function
 export const refineVietnameseMeaning = async (sentence: string, originalMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
     const prompt = `As an expert English-to-Vietnamese translator, refine the given Vietnamese translation to make it more natural and accurate in context.
@@ -553,7 +565,45 @@ export const refineVietnameseMeaning = async (sentence: string, originalMeaning:
     }
 };
 
-// Fix: Implement getIpaForText function
+export const refineVietnameseWordMeaning = async (word: string, originalMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
+    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
+    const prompt = `As an expert English-to-Vietnamese lexicographer, refine the given Vietnamese translation for the word to make it more natural and accurate.
+    - English Word: "${word}"
+    - Current Vietnamese Translation: "${originalMeaning}"
+
+    If the current translation is good, return it. If it can be improved, provide a better version.
+    Return a single JSON object with this exact structure:
+    {
+      "refinedMeaning": string
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        refinedMeaning: { type: Type.STRING },
+                    },
+                    required: ["refinedMeaning"]
+                }
+            }
+        });
+        let jsonStr = response.text.trim();
+        if (jsonStr.startsWith('```json')) {
+            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
+        }
+        const parsedData = JSON.parse(jsonStr);
+        return { refinedMeaning: parsedData.refinedMeaning };
+    } catch (error) {
+        console.error("Error refining word meaning with Gemini:", error);
+        return { error: "Could not refine the meaning. The AI service may be temporarily unavailable." };
+    }
+};
+
 export const getIpaForText = async (text: string): Promise<{ ipa?: string, error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
 
@@ -590,10 +640,9 @@ export const getIpaForText = async (text: string): Promise<{ ipa?: string, error
     }
 };
 
-// Fix: Implement getAITutorResponse function
-export const getAITutorResponse = async (history: Content[], message: string): Promise<string> => {
-    if (!ai) return "Sorry, I'm having trouble connecting right now. Please try again later.";
-    
+export const startAITutorChat = (): Chat | null => {
+    if (!ai) return null;
+
     const systemInstruction = `You are Zen, a friendly, empathetic, and patient English coach for Vietnamese learners. Your personality is curious and encouraging. Your primary goal is to help the user practice speaking natural, conversational English in a relaxed environment, and answer their questions about English.
     
     Core Instructions:
@@ -602,24 +651,47 @@ export const getAITutorResponse = async (history: Content[], message: string): P
     3.  **Maintain Context**: Use the conversation history to inform your answers.
     4.  **Answer questions**: If asked about grammar, vocabulary, or culture, provide clear and simple explanations.`;
     
-    const contents: Content[] = [...history, { role: 'user', parts: [{ text: message }] }];
+    try {
+        const chat = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: {
+                systemInstruction,
+            },
+        });
+        return chat;
+    } catch (error) {
+        console.error("Failed to start AI Tutor chat session:", error);
+        return null;
+    }
+};
+
+// FIX: Add missing getAITutorResponse function
+export const getAITutorResponse = async (history: Content[], newMessage: string): Promise<string> => {
+    if (!ai) throw new Error("Gemini AI is not available.");
+
+    const systemInstruction = `You are Zen, a friendly, empathetic, and patient English coach for Vietnamese learners. Your personality is curious and encouraging. Your primary goal is to help the user practice speaking natural, conversational English in a relaxed environment, and answer their questions about English.
+    
+    Core Instructions:
+    1.  **Be Conversational & Natural**: Keep your responses relatively short and use natural-sounding language.
+    2.  **Always Encourage**: End your responses in an encouraging way.
+    3.  **Maintain Context**: Use the conversation history to inform your answers.
+    4.  **Answer questions**: If asked about grammar, vocabulary, or culture, provide clear and simple explanations.`;
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents,
+            contents: [...history, { role: 'user', parts: [{ text: newMessage }] }],
             config: {
                 systemInstruction,
             },
         });
         return response.text.trim();
     } catch (error) {
-        console.error("Error getting AI Tutor response from Gemini:", error);
-        return "Sorry, I encountered an error. Let's try that again.";
+        console.error("Error getting AI Tutor response:", error);
+        throw new Error("Could not get a response from the AI tutor.");
     }
 };
 
-// Fix: Implement translateText function
 export const translateText = async (text: string, sourceLang: 'Vietnamese' | 'English', targetLang: 'Vietnamese' | 'English'): Promise<{ translation?: string, error?: string }> => {
     if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
 

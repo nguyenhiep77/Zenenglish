@@ -853,6 +853,48 @@ const COMMON_SENTENCES_RAW: Omit<Sentence, 'audioUrl'>[] = [
   // B1 Level
   { id: 9, sentence: "I'd like to make a reservation.", ipa: "/aɪd laɪk tu meɪk ə ˌrɛzərˈveɪʃən/", meaning: "Tôi muốn đặt chỗ trước.", category: "Services", level: Level.B1 },
   { id: 10, sentence: "What do you recommend?", ipa: "/wʌt du ju ˌrɛkəˈmɛnd/", meaning: "Bạn gợi ý món nào?", category: "Food & Drink", level: Level.B1 },
+
+  // --- ADDED SENTENCES (Generated based on existing ones) ---
+
+  // Related to "How are you?"
+  { id: 11, sentence: "Are you feeling okay today?", ipa: "/ɑr ju ˈfilɪŋ oʊˈkeɪ təˈdeɪ/", meaning: "Hôm nay bạn cảm thấy ổn chứ?", category: "Greetings", level: Level.A1 },
+  { id: 12, sentence: "How has your day been so far?", ipa: "/haʊ hæz jʊər deɪ bɪn soʊ fɑr/", meaning: "Ngày hôm nay của bạn thế nào rồi?", category: "Greetings", level: Level.A2 },
+
+  // Related to "What's your name?"
+  { id: 13, sentence: "Could you tell me your name, please?", ipa: "/kʊd ju tɛl mi jʊər neɪm, pliz/", meaning: "Bạn có thể cho tôi biết tên của bạn được không?", category: "Introductions", level: Level.A1 },
+  { id: 14, sentence: "I'm Alex. And you are?", ipa: "/aɪm ˈæləks. ænd ju ɑr/", meaning: "Tôi là Alex. Còn bạn là?", category: "Introductions", level: Level.A1 },
+
+  // Related to "I'm sorry."
+  { id: 15, sentence: "My apologies for the delay.", ipa: "/maɪ əˈpɑlədʒiz fɔr ðə dɪˈleɪ/", meaning: "Tôi xin lỗi vì sự chậm trễ.", category: "Apologies", level: Level.B1 },
+  { id: 16, sentence: "Please forgive me for what I said.", ipa: "/pliz fərˈɡɪv mi fɔr wʌt aɪ sɛd/", meaning: "Xin hãy tha thứ cho tôi vì những gì tôi đã nói.", category: "Apologies", level: Level.A2 },
+  
+  // Related to "Where is the restroom?"
+  { id: 17, sentence: "Could you point me to the nearest washroom?", ipa: "/kʊd ju pɔɪnt mi tu ðə ˈnɪrəst ˈwɑʃˌrum/", meaning: "Bạn có thể chỉ cho tôi nhà vệ sinh gần nhất không?", category: "Directions", level: Level.A2 },
+  { id: 18, sentence: "I'm looking for the men's room.", ipa: "/aɪm ˈlʊkɪŋ fɔr ðə mɛnz rum/", meaning: "Tôi đang tìm phòng vệ sinh nam.", category: "Directions", level: Level.A1 },
+  
+  // Related to "How much is this?"
+  { id: 19, sentence: "What's the price of this item?", ipa: "/wʌts ðə praɪs ʌv ðɪs ˈaɪtəm/", meaning: "Món đồ này giá bao nhiêu?", category: "Shopping", level: Level.A1 },
+  { id: 20, sentence: "Can you tell me how much this costs?", ipa: "/kæn ju tɛl mi haʊ mʌtʃ ðɪs kɔsts/", meaning: "Bạn có thể cho tôi biết cái này giá bao nhiêu không?", category: "Shopping", level: Level.A2 },
+  
+  // Related to "Could you help me, please?"
+  { id: 21, sentence: "Would you mind giving me a hand with this?", ipa: "/wʊd ju maɪnd ˈɡɪvɪŋ mi ə hænd wɪθ ðɪs/", meaning: "Bạn có phiền giúp tôi một tay với cái này không?", category: "Requests", level: Level.B1 },
+  { id: 22, sentence: "I need a little assistance, if you have a moment.", ipa: "/aɪ nid ə ˈlɪtəl əˈsɪstəns, ɪf ju hæv ə ˈmoʊmənt/", meaning: "Tôi cần một chút sự trợ giúp, nếu bạn có thời gian.", category: "Requests", level: Level.B1 },
+  
+  // Related to "I don't understand."
+  { id: 23, sentence: "Could you explain that in a different way?", ipa: "/kʊd ju ɪkˈspleɪn ðæt ɪn ə ˈdɪfrənt weɪ/", meaning: "Bạn có thể giải thích điều đó theo cách khác được không?", category: "Communication", level: Level.A2 },
+  { id: 24, sentence: "I'm not sure I follow you.", ipa: "/aɪm nɑt ʃʊr aɪ ˈfɑloʊ ju/", meaning: "Tôi không chắc là mình hiểu ý bạn.", category: "Communication", level: Level.B1 },
+  
+  // Related to "What do you do for a living?"
+  { id: 25, sentence: "What line of work are you in?", ipa: "/wʌt laɪn ʌv wɜrk ɑr ju ɪn/", meaning: "Bạn làm trong lĩnh vực nào?", category: "Small Talk", level: Level.B1 },
+  { id: 26, sentence: "So, what's your profession?", ipa: "/soʊ, wʌts jʊər prəˈfɛʃən/", meaning: "Vậy, nghề nghiệp của bạn là gì?", category: "Small Talk", level: Level.A2 },
+  
+  // Related to "I'd like to make a reservation."
+  { id: 27, sentence: "Do you have any tables available for two tonight?", ipa: "/du ju hæv ˈɛni ˈteɪbəlz əˈveɪləbəl fɔr tu təˈnaɪt/", meaning: "Tối nay bạn có bàn trống nào cho hai người không?", category: "Services", level: Level.A2 },
+  { id: 28, sentence: "I want to book a room for two nights.", ipa: "/aɪ wɑnt tu bʊk ə rum fɔr tu naɪts/", meaning: "Tôi muốn đặt một phòng cho hai đêm.", category: "Services", level: Level.A2 },
+  
+  // Related to "What do you recommend?"
+  { id: 29, sentence: "What's the special of the day?", ipa: "/wʌts ðə ˈspɛʃəl ʌv ðə deɪ/", meaning: "Món đặc biệt của ngày hôm nay là gì?", category: "Food & Drink", level: Level.A2 },
+  { id: 30, sentence: "Which dish is your most popular?", ipa: "/wɪtʃ dɪʃ ɪz jʊər moʊst ˈpɑpjələr/", meaning: "Món ăn nào của bạn phổ biến nhất?", category: "Food & Drink", level: Level.B1 },
 ];
 
 export const COMMON_SENTENCES_FULL: Sentence[] = COMMON_SENTENCES_RAW.map(sentence => ({

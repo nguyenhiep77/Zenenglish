@@ -40,8 +40,15 @@ export interface Sentence {
 
 export interface PhoneticFeedbackItem {
   word: string;
-  incorrectPhoneme: string; // e.g., /æ/ in 'cat'
-  suggestion: string; // e.g., "Open your mouth wider, like you're about to say 'ah'."
+  correctPhoneme: string; // e.g., /æ/
+  userPhoneme: string;    // e.g., /ɛ/
+  suggestion: string;
+}
+
+export interface ProsodyFeedback {
+    rhythm?: string;
+    intonation?: string;
+    wordStress?: string;
 }
 
 export interface PronunciationFeedback {
@@ -49,6 +56,8 @@ export interface PronunciationFeedback {
   feedback: string;
   suggestions: string[];
   phoneticFeedback?: PhoneticFeedbackItem[];
+  rhythmAndIntonationFeedback?: ProsodyFeedback;
+  linkingFeedback?: string;
   isError?: boolean;
 }
 
@@ -110,6 +119,8 @@ export interface FeatureCard {
     badge?: string;
     color: string;
     description: string;
+    // FIX: Add `bgColor` property to align the interface with its usage.
+    bgColor: string;
 }
 
 // Spaced Repetition System Item

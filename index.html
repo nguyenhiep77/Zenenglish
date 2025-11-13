@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
       @keyframes fade-in {
         from { opacity: 0; }
@@ -54,12 +54,18 @@
                 DEFAULT: '#F59E0B', // amber-500
               },
               light: {
-                bg: '#F9FAFB',      // gray-50
-                card: '#FFFFFF',
+                bg: '#f8fafc',      // slate-50
+                card: '#ffffff',
+                border: '#e2e8f0',  // slate-200
+                text: '#0f172a',    // slate-900
+                'text-secondary': '#64748b' // slate-500
               },
               dark: {
-                bg: '#111827',      // gray-900
-                card: '#1F2937',    // gray-800
+                bg: '#020617',      // slate-950
+                card: '#0f172a',    // slate-900
+                border: '#1e293b',  // slate-800
+                text: '#f1f5f9',    // slate-100
+                'text-secondary': '#94a3b8' // slate-400
               }
             },
             animation: {
@@ -96,7 +102,7 @@
 }
 </script>
 </head>
-<body class="bg-light-bg dark:bg-dark-bg">
+<body class="bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text">
     <div id="root"></div>
 </body>
 </html>

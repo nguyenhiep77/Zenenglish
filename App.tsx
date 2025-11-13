@@ -4,7 +4,7 @@ import {
     LightIcon, DarkIcon, UserAvatarIcon, NotificationIcon, HomeIcon, BackIcon, SpeakerIcon,
     ListeningIcon, ReadingIcon, GrammarIcon, ChevronDownIcon, SendIcon, InfoIcon, AIConversationIcon, HistoryIcon, TranslateIcon, SwapIcon, CopyIcon
 } from './constants';
-import { View, UserStats, FeatureCard, Level, Word, Sentence, ReviewItem, SentenceFeedback, CustomLesson, Conversation, PracticeContext, LessonEditorContext, Mistake, PronunciationFeedback, Example, WordDetails, ChatEntry, ConversationRecord, ConversationLine } from './types';
+import { View, UserStats, FeatureCard, Level, Word, Sentence, ReviewItem, SentenceFeedback, CustomLesson, Conversation, PracticeContext, LessonEditorContext, Mistake, PronunciationFeedback, Example, WordDetails, ChatEntry, ConversationRecord, ConversationLine, ProsodyFeedback } from './types';
 import { OXFORD_3000_FULL, COMMON_SENTENCES_FULL, CONVERSATIONS_FULL } from './constants';
 import * as srsService from './services/srsService';
 import * as lessonService from './services/lessonService';
@@ -258,6 +258,14 @@ const App: React.FC = () => {
         }
     }, [allWords]);
 
+    const handleUpdateWord = useCallback((updatedWord: Word) => {
+        if (!updatedWord.isCustom) return;
+    
+        const updatedWords = customWords.map(w => w.id === updatedWord.id ? updatedWord : w);
+        setCustomWords(updatedWords);
+        wordService.saveCustomWords(updatedWords);
+    }, [customWords]);
+
     const handleDeleteWord = useCallback((wordId: number) => {
         if (window.confirm("Are you sure you want to delete this word? This will also remove it from your custom lessons and review schedule.")) {
             const updatedLessons = lessonService.getCustomLessons().map(lesson => {
@@ -319,15 +327,16 @@ const App: React.FC = () => {
     }, []);
 
 
+  // FIX: Added bgColor property to satisfy the FeatureCard interface.
   const features: FeatureCard[] = useMemo(() => [
-    { view: View.Vocabulary, title: 'Từ Vựng', icon: VocabularyIcon, badge: `${stats.totalWords}/${allWords.length}`, color: 'text-primary', description: `Học bộ từ vựng Oxford ${allWords.length}` },
-    { view: View.Sentences, title: 'Mẫu Câu', icon: SentencesIcon, badge: `${stats.totalSentences}/${allSentences.length}`, color: 'text-secondary-dark', description: `Học ${allSentences.length} câu giao tiếp phổ biến` },
-    { view: View.Flashcards, title: 'Flashcard', icon: FlashcardIcon, badge: `${srsService.getReviewQueue().length} due`, color: 'text-accent-DEFAULT', description: 'Ôn tập với SRS' },
-    { view: View.Shadowing, title: 'Shadowing', icon: MicrophoneIcon, badge: 'Mới!', color: 'text-emerald-500', description: 'Luyện nói theo người bản xứ' },
-    { view: View.AIConversation, title: 'AI Conversation', icon: AIConversationIcon, badge: 'Mới!', color: 'text-sky-500', description: 'Practice speaking with an AI partner' },
-    { view: View.Translator, title: 'AI Translator', icon: TranslateIcon, badge: 'Mới!', color: 'text-rose-500', description: 'Dịch Anh-Việt & Việt-Anh' },
-    { view: View.Review, title: 'Ôn Tập', icon: ReviewIcon, badge: 'Nâng cao', color: 'text-green-500', description: 'Kiểm tra & Luyện tập' },
-    { view: View.MyLessons, title: 'Bài Học Của Tôi', icon: BookIcon, badge: `${customLessons.length} bài`, color: 'text-violet-500', description: 'Tạo bài học riêng' },
+    { view: View.Vocabulary, title: 'Từ Vựng', icon: VocabularyIcon, badge: `${stats.totalWords}/${allWords.length}`, color: 'text-primary', bgColor: 'bg-primary/10', description: `Học bộ từ vựng Oxford ${allWords.length}` },
+    { view: View.Sentences, title: 'Mẫu Câu', icon: SentencesIcon, badge: `${stats.totalSentences}/${allSentences.length}`, color: 'text-secondary-dark', bgColor: 'bg-secondary-dark/10', description: `Học ${allSentences.length} câu giao tiếp phổ biến` },
+    { view: View.Flashcards, title: 'Flashcard', icon: FlashcardIcon, badge: `${srsService.getReviewQueue().length} due`, color: 'text-accent-DEFAULT', bgColor: 'bg-accent-DEFAULT/10', description: 'Ôn tập với SRS' },
+    { view: View.Shadowing, title: 'Shadowing', icon: MicrophoneIcon, badge: 'Mới!', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', description: 'Luyện nói theo người bản xứ' },
+    { view: View.AIConversation, title: 'AI Conversation', icon: AIConversationIcon, badge: 'Mới!', color: 'text-sky-500', bgColor: 'bg-sky-500/10', description: 'Practice speaking with an AI partner' },
+    { view: View.Translator, title: 'AI Translator', icon: TranslateIcon, badge: 'Mới!', color: 'text-rose-500', bgColor: 'bg-rose-500/10', description: 'Dịch Anh-Việt & Việt-Anh' },
+    { view: View.Review, title: 'Ôn Tập', icon: ReviewIcon, badge: 'Nâng cao', color: 'text-green-500', bgColor: 'bg-green-500/10', description: 'Kiểm tra & Luyện tập' },
+    { view: View.MyLessons, title: 'Bài Học Của Tôi', icon: BookIcon, badge: `${customLessons.length} bài`, color: 'text-violet-500', bgColor: 'bg-violet-500/10', description: 'Tạo bài học riêng' },
   ], [stats, customLessons.length, allWords.length, allSentences.length]);
 
   const renderView = () => {
@@ -352,6 +361,7 @@ const App: React.FC = () => {
                     setPlaybackSpeed={setPlaybackSpeed}
                     onAddWord={() => setShowAddWordModal(true)}
                     onDeleteWord={handleDeleteWord}
+                    onUpdateWord={handleUpdateWord}
                 />;
       case View.Sentences:
         return <SentencesView 
@@ -438,6 +448,9 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+// FIX: Add default export for App component to resolve import error in index.tsx
+export default App;
 
 // --- SUB-COMPONENTS ---
 
@@ -846,9 +859,11 @@ const LessonDetailView: React.FC<{
 };
 
 
-const useAudioRecorderAndVisualizer = () => {
+const useAudioRecorderAndVisualizer = (config?: { continuous?: boolean; interimResults?: boolean }) => {
+    const [isInitializing, setIsInitializing] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
+    const [finalTranscript, setFinalTranscript] = useState('');
     const [recognitionError, setRecognitionError] = useState<string | null>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -868,7 +883,7 @@ const useAudioRecorderAndVisualizer = () => {
             mediaStreamSourceRef.current = null;
         }
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            audioContextRef.current.close();
+            audioContextRef.current.close().catch(console.error);
             audioContextRef.current = null;
         }
     }, []);
@@ -881,24 +896,27 @@ const useAudioRecorderAndVisualizer = () => {
 
         const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition: SpeechRecognition = new SpeechRecognitionAPI();
-        recognition.continuous = false;
         recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        recognition.continuous = config?.continuous ?? false;
+        recognition.interimResults = config?.interimResults ?? true;
 
         recognition.onstart = () => {
+            setIsInitializing(false);
             setIsListening(true);
             setTranscript('');
+            setFinalTranscript('');
         };
 
         recognition.onend = () => {
+            setIsInitializing(false);
             setIsListening(false);
             stopAudioProcessing();
         };
 
         recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
+            console.error('Speech recognition error:', event.error, event.message);
             if (event.error === 'no-speech') {
-                setRecognitionError("I didn't hear anything. Please try speaking closer to your microphone.");
+                setRecognitionError("I didn't hear you. Please make sure your microphone is unmuted and try again.");
             } else if (event.error === 'audio-capture') {
                 setRecognitionError("Couldn't capture audio. Check microphone permissions.");
             } else if (event.error === 'not-allowed') {
@@ -906,26 +924,60 @@ const useAudioRecorderAndVisualizer = () => {
             } else {
                 setRecognitionError(`An error occurred: ${event.error}. Please try again.`);
             }
+            setIsInitializing(false);
             setIsListening(false);
             stopAudioProcessing();
         };
 
         recognition.onresult = (event) => {
-            const text = event.results[event.results.length - 1][0].transcript;
-            setTranscript(text);
+            let interimTranscript = '';
+            let finalTranscriptResult = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscriptResult += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            if (recognition.continuous) {
+                setTranscript(prev => prev + interimTranscript);
+            } else {
+                 setTranscript(interimTranscript);
+            }
+
+            if (finalTranscriptResult) {
+                setFinalTranscript(prev => prev + finalTranscriptResult);
+                if (!recognition.continuous) {
+                  setTranscript(finalTranscriptResult);
+                }
+            }
         };
 
         recognitionRef.current = recognition;
 
         return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.onstart = null;
+                recognitionRef.current.onend = null;
+                recognitionRef.current.onerror = null;
+                recognitionRef.current.onresult = null;
+                try {
+                    recognitionRef.current.stop();
+                } catch(e) { /* ignore */ }
+            }
             stopAudioProcessing();
         };
-    }, [hasRecognitionSupport, stopAudioProcessing]);
+    }, [hasRecognitionSupport, stopAudioProcessing, config?.continuous, config?.interimResults]);
 
 
-    const startListening = async () => {
-        if (recognitionRef.current && !isListening) {
+    const startListening = useCallback(async () => {
+        if (recognitionRef.current && !isListening && !isInitializing) {
             setRecognitionError(null);
+            setTranscript('');
+            setFinalTranscript('');
+            setIsInitializing(true);
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 streamRef.current = stream;
@@ -944,20 +996,25 @@ const useAudioRecorderAndVisualizer = () => {
                 recognitionRef.current.start();
             } catch (err) {
                 console.error("Error accessing microphone:", err);
-                setRecognitionError("Could not access the microphone.");
+                setRecognitionError("Could not access the microphone. Please check browser permissions.");
+                setIsInitializing(false);
             }
         }
-    };
+    }, [isListening, isInitializing]);
 
-    const stopListening = () => {
-        if (recognitionRef.current && isListening) {
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current && (isListening || isInitializing)) {
             recognitionRef.current.stop();
         }
-    };
+    }, [isListening, isInitializing]);
+
+    const effectiveTranscript = recognitionRef.current?.continuous ? finalTranscript + transcript : finalTranscript || transcript;
 
     return {
+        isInitializing,
         isListening,
-        transcript,
+        transcript: effectiveTranscript,
+        finalTranscript,
         startListening,
         stopListening,
         hasRecognitionSupport,
@@ -1024,26 +1081,25 @@ const CircularProgress: React.FC<{ score: number, size?: number }> = ({ score, s
                 <circle
                     className="stroke-gray-200 dark:stroke-gray-600"
                     strokeWidth={strokeWidth}
-                    stroke="currentColor"
                     fill="transparent"
                     r={radius}
                     cx={size / 2}
                     cy={size / 2}
                 />
                 <circle
-                    className={`transition-all duration-1000 ease-out -rotate-90 origin-center ${ringColor}`}
+                    className={`${ringColor} transition-all duration-500 ease-in-out`}
                     strokeWidth={strokeWidth}
                     strokeDasharray={circumference}
                     strokeDashoffset={offset}
                     strokeLinecap="round"
-                    stroke="currentColor"
                     fill="transparent"
                     r={radius}
                     cx={size / 2}
                     cy={size / 2}
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
                 />
             </svg>
-            <span className={`absolute font-bold ${fontSize} ${scoreColor}`}>
+            <span className={`absolute ${fontSize} font-bold ${scoreColor}`}>
                 {score}
             </span>
         </div>
@@ -1051,212 +1107,445 @@ const CircularProgress: React.FC<{ score: number, size?: number }> = ({ score, s
 };
 
 const PronunciationPracticeModal: React.FC<{
-    targetText: string,
-    ipa?: string,
-    onClose: () => void,
-    audioUrl?: string,
-    playAudio: (url: string | undefined, speed?: number) => void,
-    currentlyPlayingUrl: string | null,
-    playbackSpeed: number,
-    setPlaybackSpeed: (speed: number) => void,
-}> = ({ targetText, ipa, onClose, audioUrl, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
-    const { isListening, transcript, startListening, stopListening, hasRecognitionSupport, analyser, recognitionError } = useAudioRecorderAndVisualizer();
+    targetText: string;
+    ipa: string;
+    audioUrl?: string;
+    onClose: () => void;
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ targetText, ipa, audioUrl, onClose, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
+    const { isInitializing, isListening, transcript, finalTranscript, startListening, stopListening, hasRecognitionSupport, analyser, recognitionError } = useAudioRecorderAndVisualizer();
     const [feedback, setFeedback] = useState<PronunciationFeedback | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    
-    const isSentence = targetText.includes(' ');
+    const [isChecking, setIsChecking] = useState(false);
 
     useEffect(() => {
-        const check = async () => {
-            if (transcript && !isListening) {
-                setIsLoading(true);
-                const result = await geminiService.checkPronunciation(targetText, transcript);
+        if (finalTranscript && !isListening && !isInitializing) {
+            const check = async () => {
+                setIsChecking(true);
+                const result = await geminiService.checkPronunciation(targetText, finalTranscript);
                 setFeedback(result);
-                setIsLoading(false);
-            }
-        };
-        check();
-    }, [transcript, isListening, targetText]);
-    
-    const handleRecord = () => {
-        setFeedback(null);
-        if (isListening) {
-            stopListening();
-        } else {
-            startListening();
+                setIsChecking(false);
+            };
+            check();
         }
-    };
+    }, [finalTranscript, isListening, isInitializing, targetText]);
     
-    const getStatusInfo = () => {
-        if (recognitionError) return { text: recognitionError, color: 'text-red-500' };
-        if (isLoading) return { text: "AI is analyzing...", color: 'text-gray-600 dark:text-gray-300' };
-        if (isListening) return { text: "Listening...", color: 'text-gray-600 dark:text-gray-300' };
-        if (feedback?.isError) return { text: "Analysis Failed", color: 'text-red-500' };
-        if (feedback) return { text: "Here's your feedback:", color: 'text-gray-600 dark:text-gray-300' };
-        return { text: "Tap the mic to start speaking", color: 'text-gray-600 dark:text-gray-300' };
+    const handleStart = () => {
+        setFeedback(null);
+        startListening();
     };
-    const statusInfo = getStatusInfo();
-
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-md p-6 text-center animate-fade-in-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <div className="mb-6 text-center">
-                    <h2 className={`font-bold ${isSentence ? 'text-2xl leading-tight' : 'text-3xl'}`}>{targetText}</h2>
-                    {ipa && <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">{ipa}</p>}
-                    <div className="flex items-center justify-center gap-2 mt-3">
-                         <button onClick={(e) => { e.stopPropagation(); playAudio(audioUrl, playbackSpeed); }} className={`p-3 rounded-full transition-colors ${currentlyPlayingUrl === audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                            <SpeakerIcon className="w-6 h-6" />
+            <div className="bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-2 text-center">Pronunciation Practice</h2>
+                <div className="p-4 bg-primary/10 rounded-lg text-center mb-4">
+                    <div className="flex justify-center items-center gap-2">
+                        <h3 className="text-3xl font-bold text-primary dark:text-primary-light">{targetText}</h3>
+                        <button onClick={() => playAudio(audioUrl, playbackSpeed)} className={`p-2 rounded-full transition-colors ${currentlyPlayingUrl === audioUrl ? 'bg-primary text-white' : 'hover:bg-primary/20'}`}>
+                           <SpeakerIcon className="w-6 h-6" />
                         </button>
-                        <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
                     </div>
+                    <p className="text-gray-500 dark:text-gray-400">{ipa}</p>
                 </div>
 
-                <div className="min-h-[180px] flex flex-col justify-center items-center">
-                    {feedback?.isError ? (
-                        <div className="flex flex-col items-center text-red-500">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p className="mt-2 font-semibold">Analysis Error</p>
-                        </div>
-                    ) : feedback ? (
-                         <CircularProgress score={feedback.score} />
-                    ) : (
-                        <div className="flex flex-col items-center">
-                            <VolumeMeter analyser={analyser} isListening={isListening} />
-                             <button
-                                onClick={handleRecord}
-                                disabled={isLoading}
-                                className={`mt-4 relative w-20 h-20 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500' : 'bg-primary'} text-white shadow-lg disabled:bg-gray-400`}
-                            >
-                               <MicrophoneIcon className="w-8 h-8" />
-                               {isListening && <span className="absolute inset-0 rounded-full bg-white/20 animate-ping"></span>}
-                            </button>
-                        </div>
-                    )}
-                </div>
-                
-                <p className={`${statusInfo.color} font-semibold mb-4 min-h-[24px]`}>{statusInfo.text}</p>
-
-                {feedback && (
-                    feedback.isError ? (
-                        <div className="text-center text-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                            <p className="font-semibold">{feedback.feedback}</p>
-                        </div>
-                    ) : (
-                        <div className="text-left bg-light-bg dark:bg-dark-bg p-4 rounded-lg space-y-3">
-                            <p className="font-semibold">{feedback.feedback}</p>
-                            {feedback.phoneticFeedback && feedback.phoneticFeedback.length > 0 && (
-                                <div>
-                                    <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Phonetic Tips:</h4>
-                                    <div className="space-y-2 mt-1">
-                                        {feedback.phoneticFeedback.map((pf, i) => (
-                                            <div key={i} className="p-2 border-l-4 border-accent rounded-r-md bg-white dark:bg-dark-card">
-                                                <p className="font-semibold">{pf.word} - <span className="text-accent font-mono">{pf.incorrectPhoneme}</span></p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-300">{pf.suggestion}</p>
-                                            </div>
+                <div className="flex-grow overflow-y-auto pr-2 -mr-2">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
+                        <VolumeMeter analyser={analyser} isListening={isListening} />
+                        {feedback && !feedback.isError && (
+                            <div className="text-center">
+                                <p className="font-semibold mb-2">Your Score:</p>
+                                <CircularProgress score={feedback.score} />
+                            </div>
+                        )}
+                    </div>
+                    {isChecking && <p className="text-center text-gray-500">Analyzing your speech...</p>}
+                    {recognitionError && <p className="text-red-500 text-sm text-center my-2">{recognitionError}</p>}
+                    {transcript && <p className="text-center text-gray-600 dark:text-gray-300 my-2">You said: <span className="font-semibold">{transcript}</span></p>}
+                    
+                    {feedback && !feedback.isError && (
+                        <div className="space-y-3 mt-4 animate-fade-in">
+                           <p className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">{feedback.feedback}</p>
+                           {feedback.phoneticFeedback && feedback.phoneticFeedback.length > 0 && (
+                                <div className="p-3 bg-red-500/10 rounded-lg">
+                                    <h4 className="font-bold text-red-600 dark:text-red-400 mb-2">Phonetic Tips:</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {feedback.phoneticFeedback.map((item, i) => (
+                                            <li key={i}>For <strong>{item.word}</strong>, you said <span className="font-mono bg-red-200/50 dark:bg-red-800/50 px-1 rounded">{item.userPhoneme}</span> instead of <span className="font-mono bg-green-200/50 dark:bg-green-800/50 px-1 rounded">{item.correctPhoneme}</span>. {item.suggestion}</li>
                                         ))}
-                                    </div>
+                                    </ul>
                                 </div>
-                            )}
-                            {feedback.suggestions.length > 0 && (
-                                <div>
-                                    <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">{isSentence ? 'Rhythm & Intonation:' : 'General Suggestions:'}</h4>
-                                    <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                           )}
+                           {feedback.rhythmAndIntonationFeedback && (Object.values(feedback.rhythmAndIntonationFeedback).some(v => v)) && (
+                                <div className="p-3 bg-sky-500/10 rounded-lg">
+                                    <h4 className="font-bold text-sky-600 dark:text-sky-400 mb-2">Prosody Feedback:</h4>
+                                    <ul className="space-y-1 text-sm list-disc list-inside">
+                                        {feedback.rhythmAndIntonationFeedback.rhythm && <li><strong>Rhythm:</strong> {feedback.rhythmAndIntonationFeedback.rhythm}</li>}
+                                        {feedback.rhythmAndIntonationFeedback.intonation && <li><strong>Intonation:</strong> {feedback.rhythmAndIntonationFeedback.intonation}</li>}
+                                        {feedback.rhythmAndIntonationFeedback.wordStress && <li><strong>Word Stress:</strong> {feedback.rhythmAndIntonationFeedback.wordStress}</li>}
+                                    </ul>
+                                </div>
+                           )}
+                           {feedback.linkingFeedback && (
+                                <div className="p-3 bg-violet-500/10 rounded-lg">
+                                    <h4 className="font-bold text-violet-600 dark:text-violet-400 mb-2">Linking Sounds:</h4>
+                                    <p className="text-sm">{feedback.linkingFeedback}</p>
+                                </div>
+                           )}
+                            {feedback.suggestions && feedback.suggestions.length > 0 && (
+                                <div className="p-3 bg-amber-500/10 rounded-lg">
+                                    <h4 className="font-bold text-amber-600 dark:text-amber-400 mb-2">Suggestions for Improvement:</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-sm">
                                         {feedback.suggestions.map((s, i) => <li key={i}>{s}</li>)}
                                     </ul>
                                 </div>
-                            )}
-                            <p className="text-xs text-gray-500 italic">You said: "{transcript}"</p>
+                           )}
                         </div>
-                    )
-                )}
-                
-                {!hasRecognitionSupport && (
-                    <p className="text-red-500 text-sm mt-4">Your browser does not support speech recognition.</p>
-                )}
+                    )}
+                     {feedback && feedback.isError && (
+                        <p className="text-center text-red-500 bg-red-500/10 p-3 rounded-lg">{feedback.feedback}</p>
+                    )}
+                </div>
 
-                <div className="mt-6 flex gap-3">
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
                     <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-gray-600 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
                         Close
                     </button>
-                    {feedback && (
-                        <button onClick={handleRecord} className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light transition-colors">
-                            Try Again
-                        </button>
-                    )}
+                    <button 
+                        onClick={isListening ? stopListening : handleStart}
+                        disabled={!hasRecognitionSupport || isChecking || isInitializing}
+                        className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                    >
+                         {isInitializing ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Preparing Mic...
+                            </div>
+                        ) : isListening ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                Listening... Speak now!
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <MicrophoneIcon className="w-5 h-5" />
+                                {feedback ? 'Try Again' : 'Start Recording'}
+                            </div>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
 
-const VocabularyView: React.FC<{
-    words: Word[],
-    onNavigate: NavigateFn,
-    playAudio: (url: string | undefined, speed?: number) => void,
-    currentlyPlayingUrl: string | null,
-    editorContext: LessonEditorContext | null,
-    onAddLesson: (name: string, description: string, wordIds: number[]) => void,
-    onUpdateLesson: (lesson: CustomLesson) => void,
-    setLessonEditorContext: (context: LessonEditorContext | null) => void,
-    playbackSpeed: number,
-    setPlaybackSpeed: (speed: number) => void,
-    onAddWord: () => void;
-    onDeleteWord: (wordId: number) => void;
-}> = ({ words, onNavigate, playAudio, currentlyPlayingUrl, editorContext, onAddLesson, onUpdateLesson, setLessonEditorContext, playbackSpeed, setPlaybackSpeed, onAddWord, onDeleteWord }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [levelFilter, setLevelFilter] = useState<Level | 'All'>('All');
-    const sortedWords = useMemo(() => words.sort((a, b) => a.word.localeCompare(b.word)), [words]);
-    const filteredWords = useMemo(() => 
-        sortedWords.filter(w => 
-            (levelFilter === 'All' || w.level === levelFilter) &&
-            w.word.toLowerCase().includes(searchTerm.toLowerCase())
-        ), 
-        [sortedWords, searchTerm, levelFilter]
-    );
+const SentenceListItem: React.FC<{
+    sentence: Sentence;
+    onUpdateSentence: (sentence: Sentence) => void;
+    onDeleteSentence: (id: number) => void;
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+    onPractice: (sentence: Sentence) => void;
+} & AudioProps> = ({ sentence, onUpdateSentence, onDeleteSentence, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed, onPractice }) => {
+    const [showDetails, setShowDetails] = useState(false);
+    const [explanation, setExplanation] = useState<string | null>(null);
+    const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+    const [isRefining, setIsRefining] = useState(false);
+    const [refinedMeaning, setRefinedMeaning] = useState<string | null>(null);
+    const [refineError, setRefineError] = useState<string | null>(null);
+
+
+    const toggleDetails = async () => {
+        const newShowDetails = !showDetails;
+        setShowDetails(newShowDetails);
+        if (newShowDetails && !explanation) {
+            setIsLoadingExplanation(true);
+            const expl = await geminiService.generateGrammarExplanation(sentence.sentence);
+            setExplanation(expl);
+            setIsLoadingExplanation(false);
+        }
+    };
     
+    const handleRefine = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsRefining(true);
+        setRefineError(null);
+        const result = await geminiService.refineVietnameseMeaning(sentence.sentence, sentence.meaning);
+        if (result.refinedMeaning) {
+            setRefinedMeaning(result.refinedMeaning);
+        } else {
+            setRefineError(result.error || "Failed to refine meaning.");
+        }
+        setIsRefining(false);
+    };
+
+    const handleAcceptRefinement = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (refinedMeaning) {
+            onUpdateSentence({ ...sentence, meaning: refinedMeaning });
+        }
+        setRefinedMeaning(null);
+    };
+
+    const handleCancelRefinement = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setRefinedMeaning(null);
+        setRefineError(null);
+    };
+
+    return (
+        <div onClick={toggleDetails} className="p-4 bg-light-bg dark:bg-dark-bg rounded-xl cursor-pointer transition-all duration-300 hover:bg-primary/10 dark:hover:bg-primary/20">
+            <div className="flex justify-between items-start">
+                <div className="flex-grow pr-2">
+                    <p className="font-semibold text-lg">{sentence.sentence}</p>
+                    <p className="text-gray-500 dark:text-gray-400">{sentence.meaning}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onPractice(sentence); }} 
+                        className="p-3 rounded-full hover:bg-emerald-500/10 transition-colors" 
+                        aria-label={`Practice pronunciation for: ${sentence.sentence}`}
+                    >
+                        <MicrophoneIcon className="w-6 h-6 text-emerald-500" />
+                    </button>
+                    <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
+                    <button onClick={(e) => { e.stopPropagation(); playAudio(sentence.audioUrl, playbackSpeed); }} className={`p-3 rounded-full transition-colors ${currentlyPlayingUrl === sentence.audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        <SpeakerIcon className="w-6 h-6" />
+                    </button>
+                    {sentence.isCustom && (
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteSentence(sentence.id); }} className="p-3 rounded-full hover:bg-red-500/10 transition-colors" aria-label="Delete sentence">
+                            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+             {sentence.isCustom && !refinedMeaning && (
+                 <div className="mt-2">
+                    <button 
+                        onClick={handleRefine} 
+                        disabled={isRefining}
+                        className="px-3 py-1 text-xs font-semibold text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                        {isRefining ? <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <AITutorIcon className="w-3 h-3" />}
+                        {isRefining ? 'Refining...' : 'AI Refine'}
+                    </button>
+                 </div>
+            )}
+            
+            {refinedMeaning && (
+                 <div className="mt-3 p-3 bg-amber-500/10 rounded-lg text-sm animate-fade-in">
+                    <p className="font-semibold mb-1">Suggestion:</p>
+                    <p className="text-amber-800 dark:text-amber-200">"{refinedMeaning}"</p>
+                    <div className="mt-2 flex gap-2">
+                         <button onClick={handleAcceptRefinement} className="px-2 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600">Accept</button>
+                         <button onClick={handleCancelRefinement} className="px-2 py-1 text-xs bg-gray-500 text-white rounded-md hover:bg-gray-600">Cancel</button>
+                    </div>
+                </div>
+            )}
+             {refineError && <p className="text-red-500 text-xs mt-2">{refineError}</p>}
+
+            {showDetails && (
+                 <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3 animate-fade-in text-sm">
+                    {isLoadingExplanation && <p className="text-gray-500">Loading grammar tips...</p>}
+                    {explanation && (
+                        <div>
+                            <h4 className="font-bold mb-1 flex items-center gap-2"><InfoIcon className="w-5 h-5 text-secondary" /> Grammar Tip</h4>
+                            <p className="pl-4 text-gray-600 dark:text-gray-300">{explanation}</p>
+                        </div>
+                    )}
+                 </div>
+            )}
+        </div>
+    );
+};
+
+const WordListItem: React.FC<{
+    word: Word;
+    onUpdateWord: (word: Word) => void;
+    onDeleteWord: (id: number) => void;
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ word, onUpdateWord, onDeleteWord, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
+    const [showDetails, setShowDetails] = useState(false);
+    const [details, setDetails] = useState<WordDetails | null>(null);
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    const [isRefining, setIsRefining] = useState(false);
+    const [refinedMeaning, setRefinedMeaning] = useState<string | null>(null);
+    const [refineError, setRefineError] = useState<string | null>(null);
+
+
+    const toggleDetails = async () => {
+        const newShowDetails = !showDetails;
+        setShowDetails(newShowDetails);
+        if (newShowDetails && !details) {
+            setIsLoadingDetails(true);
+            setError(null);
+            const result = await geminiService.getWordDetails(word.word);
+            if (result.details) {
+                setDetails(result.details);
+            } else {
+                setError(result.error || "Failed to load details.");
+            }
+            setIsLoadingDetails(false);
+        }
+    };
+    
+    const handleRefine = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsRefining(true);
+        setRefineError(null);
+        const result = await geminiService.refineVietnameseWordMeaning(word.word, word.meaning);
+        if (result.refinedMeaning) {
+            setRefinedMeaning(result.refinedMeaning);
+        } else {
+            setRefineError(result.error || "Failed to refine meaning.");
+        }
+        setIsRefining(false);
+    };
+
+    const handleAcceptRefinement = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (refinedMeaning) {
+            onUpdateWord({ ...word, meaning: refinedMeaning });
+        }
+        setRefinedMeaning(null);
+    };
+    
+     const handleCancelRefinement = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setRefinedMeaning(null);
+        setRefineError(null);
+    };
+
+    const DetailSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+        <div>
+            <h4 className="font-bold text-primary dark:text-primary-light mb-1">{title}</h4>
+            <div className="pl-4 text-gray-600 dark:text-gray-300 text-sm">{children}</div>
+        </div>
+    );
+
+    return (
+        <div onClick={toggleDetails} className="p-4 bg-light-bg dark:bg-dark-bg rounded-xl cursor-pointer transition-all duration-300 hover:bg-primary/10 dark:hover:bg-primary/20">
+            <div className="flex justify-between items-start">
+                <div className="flex-grow pr-2">
+                    <h3 className="font-bold text-lg">{word.word} <span className="text-base font-normal text-gray-500 dark:text-gray-400">{word.ipa}</span></h3>
+                    <p className="text-gray-500 dark:text-gray-400">{word.meaning}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
+                    <button onClick={(e) => { e.stopPropagation(); playAudio(word.audioUrl, playbackSpeed); }} className={`p-3 rounded-full transition-colors ${currentlyPlayingUrl === word.audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        <SpeakerIcon className="w-6 h-6" />
+                    </button>
+                    {word.isCustom && (
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteWord(word.id); }} className="p-3 rounded-full hover:bg-red-500/10 transition-colors" aria-label="Delete word">
+                            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+            {word.isCustom && !refinedMeaning && (
+                 <div className="mt-2">
+                    <button 
+                        onClick={handleRefine} 
+                        disabled={isRefining}
+                        className="px-3 py-1 text-xs font-semibold text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                        {isRefining ? <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <AITutorIcon className="w-3 h-3" />}
+                        {isRefining ? 'Refining...' : 'AI Refine'}
+                    </button>
+                 </div>
+            )}
+            
+            {refinedMeaning && (
+                 <div className="mt-3 p-3 bg-amber-500/10 rounded-lg text-sm animate-fade-in">
+                    <p className="font-semibold mb-1">Suggestion:</p>
+                    <p className="text-amber-800 dark:text-amber-200">"{refinedMeaning}"</p>
+                    <div className="mt-2 flex gap-2">
+                         <button onClick={handleAcceptRefinement} className="px-2 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600">Accept</button>
+                         <button onClick={handleCancelRefinement} className="px-2 py-1 text-xs bg-gray-500 text-white rounded-md hover:bg-gray-600">Cancel</button>
+                    </div>
+                </div>
+            )}
+            {refineError && <p className="text-red-500 text-xs mt-2">{refineError}</p>}
+            
+            <div className="text-sm mt-2 text-gray-500 dark:text-gray-400 border-l-4 border-primary/50 pl-3">
+                <p>"{word.example.en}"</p>
+                <p className="italic">"{word.example.vi}"</p>
+            </div>
+             {showDetails && (
+                 <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3 animate-fade-in space-y-3">
+                    {isLoadingDetails && <p className="text-gray-500">Loading details...</p>}
+                    {error && <p className="text-red-500">{error}</p>}
+                    {details && (
+                        <>
+                            <DetailSection title="Meaning">{details.englishMeaning}</DetailSection>
+                            <DetailSection title="Usage">{details.usageContext}</DetailSection>
+                            <DetailSection title="Example Suggestion">"{details.sentenceSuggestion}"</DetailSection>
+                            {details.familyWords.length > 0 && <DetailSection title="Word Family">
+                               <ul className="list-disc list-inside"> {details.familyWords.map(f => <li key={f.word}><strong>{f.word}</strong>: {f.meaning}</li>)}</ul>
+                            </DetailSection>}
+                            {details.synonyms.length > 0 && <DetailSection title="Synonyms">
+                                <ul className="list-disc list-inside">{details.synonyms.map(s => <li key={s.word}><strong>{s.word}</strong>: {s.meaning}</li>)}</ul>
+                            </DetailSection>}
+                            {details.antonyms.length > 0 && <DetailSection title="Antonyms">
+                                <ul className="list-disc list-inside">{details.antonyms.map(a => <li key={a.word}><strong>{a.word}</strong>: {a.meaning}</li>)}</ul>
+                            </DetailSection>}
+                        </>
+                    )}
+                 </div>
+             )}
+        </div>
+    );
+};
+
+const VocabularyView: React.FC<{
+    words: Word[];
+    onNavigate: NavigateFn;
+    editorContext: LessonEditorContext | null;
+    onAddLesson: (name: string, description: string, wordIds: number[]) => void;
+    onUpdateLesson: (lesson: CustomLesson) => void;
+    setLessonEditorContext: (context: LessonEditorContext | null) => void;
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+    onAddWord: () => void;
+    onDeleteWord: (id: number) => void;
+    onUpdateWord: (word: Word) => void;
+} & AudioProps> = ({ words, onNavigate, playAudio, currentlyPlayingUrl, editorContext, onAddLesson, onUpdateLesson, setLessonEditorContext, playbackSpeed, setPlaybackSpeed, onAddWord, onDeleteWord, onUpdateWord }) => {
+    
+    const [searchTerm, setSearchTerm] = useState('');
+    const [levelFilter, setLevelFilter] = useState<Level | 'all'>('all');
+    
+    // Lesson Editor State
     const [selectedWords, setSelectedWords] = useState<Set<number>>(new Set());
     const [lessonName, setLessonName] = useState('');
     const [lessonDescription, setLessonDescription] = useState('');
-    const [practiceWordId, setPracticeWordId] = useState<number | null>(null);
-    const [expandedWordId, setExpandedWordId] = useState<number | null>(null);
-    const [wordDetails, setWordDetails] = useState<Record<number, { isLoading: boolean; data: WordDetails | null; error: string | null }>>({});
-
-    const handleFetchWordDetails = useCallback(async (wordId: number, word: string) => {
-        if (wordDetails[wordId] && wordDetails[wordId].data) {
-            setExpandedWordId(prevId => prevId === wordId ? null : wordId);
-            return;
-        }
-
-        setExpandedWordId(wordId);
-        setWordDetails(prev => ({ ...prev, [wordId]: { isLoading: true, data: null, error: null } }));
-
-        const result = await geminiService.getWordDetails(word);
-        setWordDetails(prev => ({
-            ...prev,
-            [wordId]: { isLoading: false, data: result.details || null, error: result.error || null }
-        }));
-    }, [wordDetails]);
-
+    
+    const isEditing = editorContext !== null;
+    
     useEffect(() => {
         if (editorContext?.mode === 'edit' && editorContext.lesson) {
-            setLessonName(editorContext.lesson.name);
-            setLessonDescription(editorContext.lesson.description || '');
             setSelectedWords(new Set(editorContext.lesson.vocabularyIds));
+            setLessonName(editorContext.lesson.name);
+            setLessonDescription(editorContext.lesson.description);
         } else {
+            setSelectedWords(new Set());
             setLessonName('');
             setLessonDescription('');
-            setSelectedWords(new Set());
         }
     }, [editorContext]);
 
     const handleToggleWordSelection = (wordId: number) => {
         setSelectedWords(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(wordId)) newSet.delete(wordId);
-            else newSet.add(wordId);
+            if (newSet.has(wordId)) {
+                newSet.delete(wordId);
+            } else {
+                newSet.add(wordId);
+            }
             return newSet;
         });
     };
@@ -1266,415 +1555,223 @@ const VocabularyView: React.FC<{
             alert("Please provide a lesson name and select at least one word.");
             return;
         }
+        
         if (editorContext?.mode === 'edit' && editorContext.lesson) {
-            onUpdateLesson({ ...editorContext.lesson, name: lessonName, description: lessonDescription, vocabularyIds: Array.from(selectedWords) });
+            onUpdateLesson({
+                ...editorContext.lesson,
+                name: lessonName,
+                description: lessonDescription,
+                vocabularyIds: Array.from(selectedWords)
+            });
         } else {
             onAddLesson(lessonName, lessonDescription, Array.from(selectedWords));
         }
+        
         setLessonEditorContext(null);
-        onNavigate(View.MyLessons);
     };
 
-    if (editorContext) {
-        return (
-            <div className="p-4 sm:p-6">
-                <div className="max-w-4xl mx-auto">
-                    <PageHeader title={editorContext.mode === 'edit' ? 'Edit Lesson' : 'Create Lesson'} onBack={() => setLessonEditorContext(null)} />
-                    <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                        <input
-                            type="text"
-                            value={lessonName}
-                            onChange={(e) => setLessonName(e.target.value)}
-                            placeholder="Enter lesson name..."
-                            className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
-                        />
-                         <textarea
-                            value={lessonDescription}
-                            onChange={(e) => setLessonDescription(e.target.value)}
-                            placeholder="Add a description..."
-                            rows={3}
-                            className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
-                        />
-                         <button onClick={handleSaveLesson} className="w-full px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors mb-4">
-                            Save Lesson ({selectedWords.size} words)
-                        </button>
-                        <div className="max-h-[60vh] overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700">
-                            {sortedWords.map(word => (
-                                <div key={word.id} onClick={() => handleToggleWordSelection(word.id)} className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${selectedWords.has(word.id) ? 'bg-primary/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
-                                    <div>
-                                        <p className="font-bold">{word.word}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">{word.meaning}</p>
-                                    </div>
-                                    <input type="checkbox" checked={selectedWords.has(word.id)} readOnly className="w-5 h-5 rounded text-primary focus:ring-primary pointer-events-none"/>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
+    const handleCancelEdit = () => {
+        setLessonEditorContext(null);
+    };
+    
+    const filteredWords = useMemo(() => {
+        return words.filter(word => {
+            const matchesSearch = word.word.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesLevel = levelFilter === 'all' || word.level === levelFilter;
+            return matchesSearch && matchesLevel;
+        }).sort((a,b) => a.word.localeCompare(b.word));
+    }, [words, searchTerm, levelFilter]);
+    
     return (
         <div className="p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
-                <PageHeader title="Vocabulary" onBack={() => onNavigate(View.Home)} />
-                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                        <input
-                            type="text"
-                            placeholder="Search for a word..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
-                        />
-                        <button onClick={onAddWord} className="flex-shrink-0 px-4 py-2 bg-secondary text-white font-semibold rounded-lg shadow-sm hover:bg-secondary-dark transition-colors flex items-center justify-center gap-2">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                            <span>Add My Word</span>
-                        </button>
-                    </div>
-                     <div className="mb-4">
-                        <div className="flex flex-wrap gap-2">
-                            {(['All', ...Object.values(Level)] as const).map(level => (
-                                <button key={level} onClick={() => setLevelFilter(level)}
-                                    className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${levelFilter === level ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                                    {level}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-                        {filteredWords.map(word => (
-                            <WordListItem 
-                                key={word.id} 
-                                word={word}
-                                isPracticing={practiceWordId === word.id}
-                                onPracticeToggle={() => setPracticeWordId(prevId => prevId === word.id ? null : word.id)}
-                                onExpand={handleFetchWordDetails}
-                                isExpanded={expandedWordId === word.id}
-                                details={wordDetails[word.id]}
-                                onDelete={onDeleteWord}
-                                playAudio={playAudio}
-                                currentlyPlayingUrl={currentlyPlayingUrl}
-                                playbackSpeed={playbackSpeed}
-                                setPlaybackSpeed={setPlaybackSpeed}
+                <PageHeader title={isEditing ? 'Lesson Editor' : 'Vocabulary'} onBack={() => onNavigate(View.Home)} />
+                {!isEditing && (
+                    <div className="sticky top-20 bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-sm z-10 py-2 mb-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <input
+                                type="text"
+                                placeholder="Search word or meaning..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
                             />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const WordListItem: React.FC<{
-    word: Word;
-    isExpanded: boolean;
-    details: { isLoading: boolean; data: WordDetails | null; error: string | null };
-    isPracticing: boolean;
-    onPracticeToggle: () => void;
-    onExpand: (wordId: number, word: string) => void;
-    onDelete: (wordId: number) => void;
-    playbackSpeed: number;
-    setPlaybackSpeed: (speed: number) => void;
-} & AudioProps> = ({ word, isExpanded, details, isPracticing, onPracticeToggle, onExpand, onDelete, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
-    const [activeTab, setActiveTab] = useState<'family' | 'synonyms' | 'antonyms'>('family');
-
-    const renderDetails = () => {
-        if (!details.data) return null;
-        
-        const { englishMeaning, usageContext, sentenceSuggestion, familyWords, synonyms, antonyms } = details.data;
-
-        const tabs = [
-            { key: 'family', title: 'Word Forms', data: familyWords },
-            { key: 'synonyms', title: 'Synonyms', data: synonyms },
-            { key: 'antonyms', title: 'Antonyms', data: antonyms },
-        ].filter(tab => tab.data && tab.data.length > 0);
-
-        const activeTabData = tabs.find(tab => tab.key === activeTab)?.data || (tabs.length > 0 ? tabs[0].data : []);
-        
-        const sentenceAudioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(sentenceSuggestion)}&tl=en&client=tw-ob`;
-
-        return (
-            <div className="mt-4 space-y-4">
-                {englishMeaning && (
-                    <div>
-                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">English Definition</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 italic">{englishMeaning}</p>
-                    </div>
-                )}
-                {usageContext && (
-                    <div>
-                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">Common Context</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{usageContext}</p>
-                    </div>
-                )}
-                {sentenceSuggestion && (
-                    <div>
-                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-200">AI Example Sentence</h4>
-                        <div className="flex items-start justify-between gap-2 mt-1 p-3 bg-gray-200/50 dark:bg-gray-900/50 rounded-md">
-                            <p className="text-sm text-gray-800 dark:text-gray-200 flex-grow">"{sentenceSuggestion}"</p>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); playAudio(sentenceAudioUrl, playbackSpeed); }} 
-                                className={`p-2 rounded-full flex-shrink-0 transition-colors ${currentlyPlayingUrl === sentenceAudioUrl ? 'bg-primary/20 text-primary' : 'hover:bg-gray-300 dark:hover:bg-gray-600'}`}
-                                aria-label="Listen to example sentence"
+                            <select
+                                value={levelFilter}
+                                onChange={e => setLevelFilter(e.target.value as Level | 'all')}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
                             >
-                                <SpeakerIcon className="w-5 h-5" />
+                                <option value="all">All Levels</option>
+                                {Object.values(Level).map(level => <option key={level} value={level}>{level}</option>)}
+                            </select>
+                            <button onClick={onAddWord} className="px-4 py-2 bg-secondary text-white font-semibold rounded-lg shadow-sm hover:bg-secondary-light transition-colors text-sm whitespace-nowrap">
+                                Add Word
                             </button>
                         </div>
                     </div>
                 )}
-                {tabs.length > 0 && (
-                    <div>
-                        <div className="flex border-b border-gray-200 dark:border-gray-700">
-                            {tabs.map(tab => (
-                                <button key={tab.key} onClick={(e) => { e.stopPropagation(); setActiveTab(tab.key as any); }}
-                                    className={`px-4 py-2 text-sm font-semibold -mb-px border-b-2 transition-colors ${activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-600'}`}>
-                                    {tab.title}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="p-3">
-                            <div className="flex flex-wrap gap-2">
-                                {activeTabData.map(item => (
-                                    <span key={item.word} className="bg-gray-200 dark:bg-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">{item.word} <i className="text-gray-500">({item.meaning})</i></span>
-                                ))}
-                            </div>
-                        </div>
+                
+                {isEditing && (
+                    <div className="bg-white dark:bg-dark-card p-4 rounded-xl mb-4 shadow-lg sticky top-20 z-20 space-y-3">
+                         <h3 className="text-lg font-bold">{editorContext.mode === 'edit' ? `Editing "${editorContext.lesson?.name}"` : 'Create New Lesson'}</h3>
+                         <input 
+                             type="text"
+                             placeholder="Lesson Name"
+                             value={lessonName}
+                             onChange={(e) => setLessonName(e.target.value)}
+                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg"
+                         />
+                         <textarea 
+                             placeholder="Lesson Description (optional)"
+                             value={lessonDescription}
+                             onChange={(e) => setLessonDescription(e.target.value)}
+                             rows={2}
+                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg resize-y"
+                         />
+                         <div className="flex justify-between items-center">
+                             <p className="font-semibold">{selectedWords.size} words selected</p>
+                             <div className="flex gap-2">
+                                <button onClick={handleCancelEdit} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Cancel</button>
+                                <button onClick={handleSaveLesson} className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light">Save Lesson</button>
+                             </div>
+                         </div>
                     </div>
                 )}
-            </div>
-        );
-    };
-
-    return (
-        <div className="p-4 bg-light-bg dark:bg-dark-bg rounded-xl">
-            <div className="flex justify-between items-start gap-2">
-                <div className="flex-grow">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg font-bold">{word.word}</h3>
-                        <span className="text-base font-normal text-gray-500 dark:text-gray-400">{word.ipa}</span>
-                        <span className="text-xs font-bold text-secondary-dark bg-secondary/20 px-2 py-0.5 rounded-full">{word.level}</span>
-                        {word.isCustom && <span className="text-xs font-semibold bg-accent/20 text-accent-dark px-2 py-0.5 rounded-full">Custom</span>}
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-300 mt-1">{word.meaning}</p>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    {word.isCustom && (
-                        <button onClick={() => onDelete(word.id)} className="p-2 rounded-full hover:bg-red-500/10" aria-label={`Delete ${word.word}`}><svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg></button>
-                    )}
-                    <button onClick={onPracticeToggle} className="p-2 rounded-full hover:bg-emerald-500/10" aria-label={`Practice ${word.word}`}>
-                        <MicrophoneIcon className={`w-5 h-5 transition-colors ${isPracticing ? 'text-primary' : 'text-emerald-500'}`} />
-                    </button>
-                    <button onClick={() => playAudio(word.audioUrl, playbackSpeed)} className={`p-2 rounded-full hover:bg-primary/10 ${currentlyPlayingUrl === word.audioUrl ? 'text-primary' : ''}`} aria-label={`Listen to ${word.word}`}><SpeakerIcon className="w-5 h-5" /></button>
-                    <button onClick={() => onExpand(word.id, word.word)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label={`Details for ${word.word}`}><ChevronDownIcon className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} /></button>
-                </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 border-l-4 border-primary/50 pl-3">
-                <p>"{word.example.en}"</p>
-                <p className="italic">"{word.example.vi}"</p>
-            </div>
-            {isExpanded && (
-                <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-2 animate-fade-in">
-                    {details?.isLoading && <p className="text-sm text-gray-500 italic px-4 py-2">Loading details...</p>}
-                    {details?.error && <p className="text-red-500 text-sm px-4 py-2">{details.error}</p>}
-                    {details?.data && renderDetails()}
-                </div>
-            )}
-             {isPracticing && (
-                <InlinePronunciationPractice
-                    targetText={word.word}
-                    ipa={word.ipa}
-                    audioUrl={word.audioUrl}
-                    playAudio={playAudio}
-                    currentlyPlayingUrl={currentlyPlayingUrl}
-                    playbackSpeed={playbackSpeed}
-                    setPlaybackSpeed={setPlaybackSpeed}
-                />
-            )}
-        </div>
-    );
-};
-
-const InlinePronunciationPractice: React.FC<{
-    targetText: string,
-    ipa?: string,
-    audioUrl?: string,
-    playAudio: (url: string | undefined, speed?: number) => void,
-    currentlyPlayingUrl: string | null,
-    playbackSpeed: number,
-    setPlaybackSpeed: (speed: number) => void,
-}> = ({ targetText, ipa, audioUrl, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
-    const { isListening, transcript, startListening, stopListening, hasRecognitionSupport, analyser, recognitionError } = useAudioRecorderAndVisualizer();
-    const [feedback, setFeedback] = useState<PronunciationFeedback | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    
-    useEffect(() => {
-        const check = async () => {
-            if (transcript && !isListening) {
-                setIsLoading(true);
-                setFeedback(null);
-                const result = await geminiService.checkPronunciation(targetText, transcript);
-                setFeedback(result);
-                setIsLoading(false);
-            }
-        };
-        check();
-    }, [transcript, isListening, targetText]);
-    
-    const handleRecord = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setFeedback(null);
-        if (isListening) {
-            stopListening();
-        } else {
-            startListening();
-        }
-    };
-    
-    const handlePracticeAgain = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setFeedback(null);
-        startListening();
-    };
-
-    const getStatusInfo = () => {
-        if (recognitionError) return { text: recognitionError, color: 'text-red-500' };
-        if (isLoading) return { text: "AI is analyzing...", color: 'text-gray-500 dark:text-gray-400' };
-        if (isListening) return { text: "Listening...", color: 'text-primary' };
-        if (feedback) return { text: "Here's your feedback:", color: 'text-gray-600 dark:text-gray-300' };
-        return { text: "Tap the mic to start speaking", color: 'text-gray-500 dark:text-gray-400' };
-    };
-    const statusInfo = getStatusInfo();
-    
-    return (
-        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg animate-fade-in" onClick={e => e.stopPropagation()}>
-            {!feedback && (
-                <div className="flex flex-col items-center justify-center min-h-[150px]">
-                    {isListening ? (
-                         <VolumeMeter analyser={analyser} isListening={isListening} />
-                    ) : (
-                         <button
-                            onClick={handleRecord}
-                            disabled={isLoading}
-                            className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-colors bg-primary text-white shadow-lg disabled:bg-gray-400 transform hover:scale-105`}
-                        >
-                           <MicrophoneIcon className="w-8 h-8" />
-                        </button>
-                    )}
-                    <p className={`mt-3 font-semibold text-sm ${statusInfo.color} min-h-[20px] text-center`}>{statusInfo.text}</p>
-                </div>
-            )}
-            {feedback?.isError && (
-                <div className="text-center text-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                    <p className="font-semibold">{feedback.feedback}</p>
-                     <button onClick={handlePracticeAgain} className="mt-3 text-sm font-semibold text-primary hover:underline">
-                        Try Again
-                    </button>
-                </div>
-            )}
-            {feedback && !feedback.isError && (
-                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                    <div className="flex-shrink-0">
-                        <CircularProgress score={feedback.score} size={80} />
-                    </div>
-                    <div className="flex-grow text-left space-y-2 w-full">
-                        <p className="font-semibold text-gray-800 dark:text-gray-100">{feedback.feedback}</p>
-                        {feedback.suggestions.length > 0 && (
-                            <div>
-                                <h4 className="font-bold text-xs text-gray-700 dark:text-gray-200">Suggestions:</h4>
-                                <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
-                                    {feedback.suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                                </ul>
+                
+                <div className="space-y-3">
+                    {filteredWords.map(word => (
+                        <div key={word.id} className="flex items-center gap-2">
+                            {isEditing && (
+                                <input
+                                    type="checkbox"
+                                    checked={selectedWords.has(word.id)}
+                                    onChange={() => handleToggleWordSelection(word.id)}
+                                    className="w-6 h-6 rounded text-primary focus:ring-primary/50"
+                                />
+                            )}
+                            <div className="flex-grow">
+                                <WordListItem 
+                                    word={word} 
+                                    playAudio={playAudio} 
+                                    currentlyPlayingUrl={currentlyPlayingUrl} 
+                                    playbackSpeed={playbackSpeed}
+                                    setPlaybackSpeed={setPlaybackSpeed}
+                                    onDeleteWord={onDeleteWord}
+                                    onUpdateWord={onUpdateWord}
+                                />
                             </div>
-                        )}
-                        <p className="text-xs text-gray-500 italic">You said: "{transcript}"</p>
-                         <button onClick={handlePracticeAgain} className="text-sm font-semibold text-primary hover:underline">
-                            Practice Again
-                        </button>
-                    </div>
+                        </div>
+                    ))}
                 </div>
-            )}
-            {!hasRecognitionSupport && (
-                <p className="text-red-500 text-sm mt-4 text-center">Your browser does not support speech recognition.</p>
-            )}
+            </div>
         </div>
     );
 };
 
-
-const AddConversationModal: React.FC<{
-    onClose: () => void;
-    onAddConversation: (conversation: Conversation) => void;
-}> = ({ onClose, onAddConversation }) => {
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('Custom');
-    const [rawText, setRawText] = useState('');
+// FIX: Add missing TranslatorView component
+const TranslatorView: React.FC<{ 
+    onNavigate: NavigateFn;
+} & AudioProps> = ({ onNavigate, playAudio, currentlyPlayingUrl }) => {
+    const [sourceText, setSourceText] = useState('');
+    const [translatedText, setTranslatedText] = useState('');
+    const [sourceLang, setSourceLang] = useState<'English' | 'Vietnamese'>('English');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const createTtsApiUrl = (text: string, lang: string = 'en') => `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+    const targetLang = sourceLang === 'English' ? 'Vietnamese' : 'English';
 
-    const handleSubmit = async () => {
-        if (!title.trim() || !rawText.trim()) {
-            setError('Title and conversation text cannot be empty.');
-            return;
-        }
+    const handleTranslate = async () => {
+        if (!sourceText.trim()) return;
         setIsLoading(true);
         setError(null);
+        setTranslatedText('');
 
-        const result = await geminiService.parseAndTranslateConversation(rawText, title, category);
-
-        if (result.error || !result.conversation) {
+        const result = await geminiService.translateText(sourceText, sourceLang, targetLang);
+        if (result.translation) {
+            setTranslatedText(result.translation);
+        } else {
             setError(result.error || 'An unknown error occurred.');
-            setIsLoading(false);
-            return;
         }
-
-        const newConversation: Conversation = {
-            id: new Date().toISOString() + Math.random(),
-            title: result.conversation.title,
-            category: result.conversation.category,
-            level: result.conversation.level,
-            isCustom: true,
-            lines: result.conversation.lines.map((line: Omit<ConversationLine, 'audioUrl'|'ipa'>) => ({
-                ...line,
-                audioUrl: createTtsApiUrl(line.sentence)
-            })),
-        };
-        
-        onAddConversation(newConversation);
         setIsLoading(false);
-        onClose();
     };
 
+    const handleSwapLanguages = () => {
+        setSourceLang(targetLang);
+        const currentSource = sourceText;
+        setSourceText(translatedText);
+        setTranslatedText(currentSource);
+    };
+
+    const handleCopyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            // maybe show a toast notification in a real app
+        }).catch(err => console.error('Failed to copy text: ', err));
+    };
+    
+    const handlePlayAudio = (text: string, lang: 'English' | 'Vietnamese') => {
+        const langCode = lang === 'English' ? 'en' : 'vi';
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
+        playAudio(url);
+    };
+
+
     return (
-         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold mb-4 text-center">Add Custom Conversation</h2>
-                <div className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-4">
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Conversation Title"
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
-                    />
-                    <textarea
-                        value={rawText}
-                        onChange={(e) => setRawText(e.target.value)}
-                        placeholder={"Enter your conversation here.\nFormat: Speaker: Sentence\n\nExample:\nTom: Hi, how are you?\nJane: I'm doing great, thanks!"}
-                        rows={10}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y font-mono text-sm"
-                    />
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                </div>
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-gray-600 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-                        Cancel
-                    </button>
-                    <button onClick={handleSubmit} disabled={isLoading} className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light transition-colors disabled:bg-gray-400 flex items-center justify-center">
-                        {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Analyze & Create'}
+        <div className="p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto">
+                <PageHeader title="AI Translator" onBack={() => onNavigate(View.Home)} />
+                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 space-y-4">
+                    {/* Source Text Area */}
+                    <div className="relative">
+                        <textarea
+                            value={sourceText}
+                            onChange={(e) => setSourceText(e.target.value)}
+                            placeholder={`Enter ${sourceLang} text...`}
+                            rows={5}
+                            className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
+                        />
+                         <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                             <button onClick={() => handlePlayAudio(sourceText, sourceLang)} disabled={!sourceText.trim()} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50">
+                                <SpeakerIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                             <button onClick={() => handleCopyToClipboard(sourceText)} disabled={!sourceText.trim()} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50">
+                                <CopyIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center justify-between">
+                         <div className="font-semibold">{sourceLang}</div>
+                        <button onClick={handleSwapLanguages} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <SwapIcon className="w-6 h-6 text-primary" />
+                        </button>
+                         <div className="font-semibold">{targetLang}</div>
+                    </div>
+                    
+                    {/* Translated Text Area */}
+                     <div className="relative">
+                        <textarea
+                            value={isLoading ? 'Translating...' : translatedText}
+                            readOnly
+                            placeholder={`Translation will appear here...`}
+                            rows={5}
+                            className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg outline-none resize-y"
+                        />
+                        <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                            <button onClick={() => handlePlayAudio(translatedText, targetLang)} disabled={!translatedText.trim()} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50">
+                                <SpeakerIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                            <button onClick={() => handleCopyToClipboard(translatedText)} disabled={!translatedText.trim()} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50">
+                                <CopyIcon className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+                    <button onClick={handleTranslate} disabled={isLoading || !sourceText.trim()} className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-light transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 flex items-center justify-center">
+                         {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Translate'}
                     </button>
                 </div>
             </div>
@@ -1686,1217 +1783,91 @@ const SentencesView: React.FC<{
     sentences: Sentence[],
     conversations: Conversation[],
     onNavigate: NavigateFn,
-    playbackSpeed: number;
+    playbackSpeed: number,
     setPlaybackSpeed: (speed: number) => void;
     onAddConversation: (conversation: Conversation) => void;
-    onDeleteConversation: (conversationId: string) => void;
+    onDeleteConversation: (id: string) => void;
     onAddSentence: () => void;
-    onDeleteSentence: (sentenceId: number) => void;
+    onDeleteSentence: (id: number) => void;
     onUpdateSentence: (sentence: Sentence) => void;
 } & AudioProps> = ({ sentences, conversations, onNavigate, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed, onAddConversation, onDeleteConversation, onAddSentence, onDeleteSentence, onUpdateSentence }) => {
-    const [activeTab, setActiveTab] = useState<'sentences' | 'conversations'>('sentences');
     
-    const categories = useMemo(() => ['All Topics', ...Array.from(new Set(sentences.map(s => s.category)))], [sentences]);
-    const [selectedCategory, setSelectedCategory] = useState('All Topics');
-
-    const [practiceItemId, setPracticeItemId] = useState<number | string | null>(null);
-    const [grammarExplanations, setGrammarExplanations] = useState<Record<number, { isLoading: boolean; data: string | null; error: string | null }>>({});
-    const [refinedMeanings, setRefinedMeanings] = useState<Record<number, { isLoading: boolean; data: string | null; error: string | null }>>({});
-    const [showAddConvModal, setShowAddConvModal] = useState(false);
-
-    const [exampleWord, setExampleWord] = useState('');
-    const [generatedExamples, setGeneratedExamples] = useState<Example[] | null>(null);
-    const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
-    const [generationError, setGenerationError] = useState<string | null>(null);
-
-    const handleGenerateExamples = async () => {
-        if (!exampleWord.trim()) {
-            setGenerationError("Please enter a word to generate examples.");
-            return;
-        }
-        setIsGeneratingExamples(true);
-        setGeneratedExamples(null);
-        setGenerationError(null);
-
-        const result = await geminiService.generateExampleSentences(exampleWord.trim());
-
-        if (result.examples) {
-            setGeneratedExamples(result.examples);
-        } else {
-            setGenerationError(result.error || "Failed to generate examples.");
-        }
-
-        setIsGeneratingExamples(false);
-    };
-
-    const handleFetchGrammarExplanation = async (sentence: Sentence) => {
-        const currentState = grammarExplanations[sentence.id];
-
-        if (currentState) { // If it exists (data, loading, or error), toggle it off
-            setGrammarExplanations(prev => {
-                const newState = { ...prev };
-                delete newState[sentence.id];
-                return newState;
-            });
-            return;
-        }
-
-        setGrammarExplanations(prev => ({
-            ...prev,
-            [sentence.id]: { isLoading: true, data: null, error: null }
-        }));
-
-        const explanation = await geminiService.generateGrammarExplanation(sentence.sentence);
-        const isError = explanation.includes("Đã xảy ra lỗi");
-
-        setGrammarExplanations(prev => ({
-            ...prev,
-            [sentence.id]: { 
-                isLoading: false, 
-                data: isError ? null : explanation, 
-                error: isError ? explanation : null 
-            }
-        }));
-    };
-
-    const handleRefineMeaning = async (sentence: Sentence) => {
-        const currentState = refinedMeanings[sentence.id];
-         if (currentState) {
-            setRefinedMeanings(prev => { const newState = { ...prev }; delete newState[sentence.id]; return newState; });
-            return;
-        }
-        setRefinedMeanings(prev => ({ ...prev, [sentence.id]: { isLoading: true, data: null, error: null } }));
-        const result = await geminiService.refineVietnameseMeaning(sentence.sentence, sentence.meaning);
-        setRefinedMeanings(prev => ({ ...prev, [sentence.id]: { isLoading: false, data: result.refinedMeaning || null, error: result.error || null } }));
-    };
+    const [activeTab, setActiveTab] = useState('sentences');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [levelFilter, setLevelFilter] = useState<Level | 'all'>('all');
     
-    const handleAcceptRefinement = (sentence: Sentence, newMeaning: string) => {
-        onUpdateSentence({ ...sentence, meaning: newMeaning });
-        setRefinedMeanings(prev => { const newState = { ...prev }; delete newState[sentence.id]; return newState; });
-    };
-
+    const [showAddConvoModal, setShowAddConvoModal] = useState(false);
+    const [sentenceToPractice, setSentenceToPractice] = useState<Sentence | null>(null);
+    
     const filteredSentences = useMemo(() => {
-        if (selectedCategory === 'All Topics') {
-            return sentences;
-        }
-        return sentences.filter(s => s.category === selectedCategory);
-    }, [sentences, selectedCategory]);
+        return sentences.filter(s => {
+            const matchesSearch = s.sentence.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  s.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesLevel = levelFilter === 'all' || s.level === levelFilter;
+            return matchesSearch && matchesLevel;
+        });
+    }, [sentences, searchTerm, levelFilter]);
     
-    const [expandedConversationId, setExpandedConversationId] = useState<string | null>(null);
-    
-    const toggleConversation = (id: string) => {
-        setExpandedConversationId(prevId => (prevId === id ? null : id));
-    };
+    const filteredConversations = useMemo(() => {
+         return conversations.filter(c => {
+            const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesLevel = levelFilter === 'all' || c.level === levelFilter;
+            return matchesSearch && matchesLevel;
+        });
+    }, [conversations, searchTerm, levelFilter]);
 
     return (
-         <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
-                <PageHeader title="Common Sentences" onBack={() => onNavigate(View.Home)} />
+                <PageHeader title="Sentences & Conversations" onBack={() => onNavigate(View.Home)} />
                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg">
                     <div className="flex border-b border-gray-200 dark:border-gray-700 p-2">
-                        <button onClick={() => setActiveTab('sentences')} className={`w-1/2 py-2.5 font-semibold rounded-lg transition-colors ${activeTab === 'sentences' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Common Phrases</button>
+                        <button onClick={() => setActiveTab('sentences')} className={`w-1/2 py-2.5 font-semibold rounded-lg transition-colors ${activeTab === 'sentences' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Sentences</button>
                         <button onClick={() => setActiveTab('conversations')} className={`w-1/2 py-2.5 font-semibold rounded-lg transition-colors ${activeTab === 'conversations' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Conversations</button>
                     </div>
-
+                    
                     <div className="p-4 sm:p-6">
-                        {activeTab === 'sentences' && (
-                            <>
-                                <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-900/50 rounded-xl">
-                                    <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                        <AITutorIcon className="w-6 h-6 text-primary" />
-                                        AI Example Sentence Generator
-                                    </h4>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Enter an English word to see it used in context.</p>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <input
-                                            type="text"
-                                            value={exampleWord}
-                                            onChange={(e) => setExampleWord(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleGenerateExamples()}
-                                            placeholder="e.g., 'serendipity'"
-                                            className="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
-                                        />
-                                        <button 
-                                            onClick={handleGenerateExamples}
-                                            disabled={isGeneratingExamples}
-                                            className="px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-light transition-colors flex items-center justify-center disabled:bg-gray-400"
-                                        >
-                                            {isGeneratingExamples ? (
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <span>Generate</span>
-                                            )}
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="mt-4">
-                                        {isGeneratingExamples && (
-                                            <div className="space-y-2">
-                                                {[...Array(3)].map((_, i) => (
-                                                    <div key={i} className="p-3 bg-white dark:bg-dark-bg rounded-lg animate-pulse">
-                                                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
-                                                        <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {generationError && (
-                                            <p className="text-red-500 text-center font-medium p-2">{generationError}</p>
-                                        )}
-                                        {generatedExamples && (
-                                            <div className="space-y-3 animate-fade-in">
-                                                <h5 className="font-bold mt-2">Generated Examples:</h5>
-                                                {generatedExamples.map((ex, index) => (
-                                                    <div key={index} className="p-3 bg-white dark:bg-dark-bg rounded-lg border border-gray-200 dark:border-gray-700">
-                                                        <div className="flex justify-between items-start gap-3">
-                                                            <div className="flex-1">
-                                                                <p className="font-semibold text-gray-800 dark:text-gray-100">{ex.en}</p>
-                                                                <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">{ex.vi}</p>
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => playAudio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(ex.en)}&tl=en&client=tw-ob`, playbackSpeed)} 
-                                                                className="p-2 rounded-full hover:bg-primary/10"
-                                                                aria-label={`Listen to "${ex.en}"`}
-                                                            >
-                                                                <SpeakerIcon className={`w-5 h-5 transition-colors ${currentlyPlayingUrl?.includes(encodeURIComponent(ex.en)) ? 'text-primary' : 'text-gray-500'}`} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                                    <div className="flex-grow">
-                                        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-gray-200 dark:border-gray-700 rounded-lg font-semibold">
-                                            {categories.map(category => (
-                                                <option key={category} value={category}>{category}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <button onClick={onAddSentence} className="flex-shrink-0 px-4 py-2 bg-secondary text-white font-semibold rounded-lg shadow-sm hover:bg-secondary-dark transition-colors flex items-center justify-center gap-2">
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                        <span>Add My Sentence</span>
-                                    </button>
-                                </div>
-                                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                                {filteredSentences.map(sentence => {
-                                    const grammarState = grammarExplanations[sentence.id];
-                                    const refinementState = refinedMeanings[sentence.id];
-                                    const isGrammarExpanded = !!grammarState;
-                                    const isRefineExpanded = !!refinementState;
-                                    const isPracticing = practiceItemId === sentence.id;
-                                    return (
-                                        <div key={sentence.id} className="bg-light-bg dark:bg-dark-bg rounded-xl overflow-hidden transition-all duration-300 shadow-sm border border-transparent hover:border-primary/20 hover:shadow-md">
-                                            <div className="p-4">
-                                                <div className="flex justify-between items-start gap-3">
-                                                    <div className="flex-1">
-                                                        <p className={`transition-colors duration-300 font-semibold text-gray-800 dark:text-gray-100`}>{sentence.sentence}</p>
-                                                        <p className={`text-sm mt-1 transition-colors duration-300 text-gray-500 dark:text-gray-400`}>{sentence.meaning}</p>
-                                                    </div>
-                                                    <div className="flex items-center flex-shrink-0">
-                                                        {sentence.isCustom && (
-                                                            <button onClick={() => onDeleteSentence(sentence.id)} className="p-2 rounded-full hover:bg-red-500/10" aria-label="Delete sentence">
-                                                                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                                                            </button>
-                                                        )}
-                                                        <button onClick={() => playAudio(sentence.audioUrl, playbackSpeed)} className={`p-2 rounded-full hover:bg-primary/10 ${currentlyPlayingUrl === sentence.audioUrl ? 'text-primary' : 'text-gray-500'}`}>
-                                                            <SpeakerIcon className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <button onClick={() => handleFetchGrammarExplanation(sentence)} disabled={grammarState?.isLoading} className={`flex items-center gap-1.5 text-sm font-semibold p-2 rounded-md transition-colors disabled:opacity-50 ${isGrammarExpanded ? 'bg-secondary/10 text-secondary-dark' : 'text-gray-500 hover:bg-secondary/10 hover:text-secondary-dark'}`}>
-                                                            <GrammarIcon className="w-4 h-4" /> <span>Grammar</span>
-                                                        </button>
-                                                        <button onClick={() => handleRefineMeaning(sentence)} disabled={refinementState?.isLoading} className={`flex items-center gap-1.5 text-sm font-semibold p-2 rounded-md transition-colors disabled:opacity-50 ${isRefineExpanded ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-accent/10 hover:text-accent'}`}>
-                                                            <AITutorIcon className="w-4 h-4" /> <span>Refine</span>
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-bold text-secondary-dark bg-secondary/20 px-2 py-0.5 rounded-full">{sentence.level}</span>
-                                                        <button onClick={() => setPracticeItemId(prevId => prevId === sentence.id ? null : sentence.id)} className={`p-2 rounded-md transition-colors ${isPracticing ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-primary/10 hover:text-primary'}`} aria-label={`Practice pronunciation of "${sentence.sentence}"`}>
-                                                            <MicrophoneIcon className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {isGrammarExpanded && (
-                                                <div className="px-4 pb-4 animate-fade-in">
-                                                    {grammarState.isLoading && <p className="text-sm text-gray-500">Analyzing grammar...</p>}
-                                                    {grammarState.error && <p className="text-red-500 text-sm">{grammarState.error}</p>}
-                                                    {grammarState.data && (
-                                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-400">
-                                                            <h5 className="font-bold text-sm mb-1 text-blue-800 dark:text-blue-300">Grammar Explanation</h5>
-                                                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{grammarState.data}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {isRefineExpanded && (
-                                                <div className="px-4 pb-4 animate-fade-in">
-                                                    {refinementState.isLoading && <p className="text-sm text-gray-500">AI is thinking...</p>}
-                                                    {refinementState.error && <p className="text-red-500 text-sm">{refinementState.error}</p>}
-                                                    {refinementState.data && (
-                                                        <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border-l-4 border-amber-400">
-                                                            <div className="flex justify-between items-center">
-                                                                <div>
-                                                                    <h5 className="font-bold text-sm text-amber-800 dark:text-amber-300">AI Suggestion</h5>
-                                                                    <p className="text-sm text-gray-700 dark:text-gray-300">{refinementState.data}</p>
-                                                                </div>
-                                                                {sentence.isCustom && (
-                                                                    <button onClick={() => handleAcceptRefinement(sentence, refinementState.data!)} className="px-3 py-1 bg-primary text-white text-xs font-semibold rounded-md hover:bg-primary-light transition-colors">
-                                                                        Accept
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {isPracticing && (
-                                                <InlinePronunciationPractice
-                                                    targetText={sentence.sentence}
-                                                    ipa={sentence.ipa}
-                                                    audioUrl={sentence.audioUrl}
-                                                    playAudio={playAudio}
-                                                    currentlyPlayingUrl={currentlyPlayingUrl}
-                                                    playbackSpeed={playbackSpeed}
-                                                    setPlaybackSpeed={setPlaybackSpeed}
-                                                />
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                                </div>
-                            </>
-                        )}
-                        {activeTab === 'conversations' && (
-                             <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-                                <button onClick={() => setShowAddConvModal(true)} className="w-full p-4 mb-2 text-center font-semibold bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light rounded-lg hover:bg-primary/20 transition-colors">
-                                    + Add My Conversation
-                                </button>
-                                {conversations.map(convo => {
-                                    const isExpanded = expandedConversationId === convo.id;
-                                    return (
-                                        <div key={convo.id} className="bg-light-bg dark:bg-dark-bg rounded-xl transition-all duration-300">
-                                            <div 
-                                                className="w-full flex justify-between items-center p-4 text-left font-bold text-lg cursor-pointer"
-                                                onClick={() => toggleConversation(convo.id)}
-                                                aria-expanded={isExpanded} aria-controls={`convo-content-${convo.id}`}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span>{convo.title}</span>
-                                                    {convo.isCustom && <span className="text-xs font-semibold bg-secondary/20 text-secondary-dark dark:text-secondary-light px-2 py-0.5 rounded-full">Custom</span>}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {convo.isCustom && (
-                                                        <button onClick={(e) => {e.stopPropagation(); onDeleteConversation(convo.id)}} className="p-2 rounded-full hover:bg-red-500/10" aria-label="Delete conversation">
-                                                          <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                                                        </button>
-                                                    )}
-                                                    <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                                </div>
-                                            </div>
-                                            <div 
-                                                id={`convo-content-${convo.id}`}
-                                                className={`transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[500px] overflow-y-auto' : 'max-h-0 overflow-hidden'}`}
-                                            >
-                                                <div className="px-4 pb-4 pt-2 space-y-3 border-t border-gray-200 dark:border-gray-700">
-                                                    {convo.lines.map((line, index) => {
-                                                        const lineId = `${convo.id}-${index}`;
-                                                        const isPracticing = practiceItemId === lineId;
-                                                        return (
-                                                        <div key={index} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                                                            <div className="flex justify-between items-start gap-3">
-                                                                <div className="flex-1">
-                                                                    <p><span className="font-semibold">{line.speaker}:</span> {line.sentence}</p>
-                                                                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">{line.meaning}</p>
-                                                                </div>
-                                                                <div className="flex items-center flex-shrink-0 gap-1">
-                                                                    <button onClick={() => setPracticeItemId(prevId => prevId === lineId ? null : lineId)} className="p-2 rounded-full hover:bg-emerald-500/10" aria-label={`Practice pronunciation of "${line.sentence}"`}>
-                                                                        <MicrophoneIcon className={`w-5 h-5 transition-colors ${isPracticing ? 'text-primary' : 'text-emerald-500'}`} />
-                                                                    </button>
-                                                                    <button onClick={(e) => { e.stopPropagation(); playAudio(line.audioUrl, playbackSpeed); }} className={`p-2 rounded-full hover:bg-primary/10 ${currentlyPlayingUrl === line.audioUrl ? 'text-primary' : ''}`}>
-                                                                        <SpeakerIcon className="w-5 h-5" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                             {isPracticing && (
-                                                                <InlinePronunciationPractice
-                                                                    targetText={line.sentence}
-                                                                    ipa={line.ipa}
-                                                                    audioUrl={line.audioUrl}
-                                                                    playAudio={playAudio}
-                                                                    currentlyPlayingUrl={currentlyPlayingUrl}
-                                                                    playbackSpeed={playbackSpeed}
-                                                                    setPlaybackSpeed={setPlaybackSpeed}
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    )})}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                 {showAddConvModal && (
-                    <AddConversationModal 
-                        onClose={() => setShowAddConvModal(false)}
-                        onAddConversation={onAddConversation}
-                    />
-                )}
-            </div>
-        </div>
-    );
-};
-
-const FlashcardView: React.FC<{
-    onNavigate: NavigateFn,
-    practiceContext: PracticeContext,
-    customLessons: CustomLesson[],
-    allWords: Word[],
-    allSentences: Sentence[],
-    playbackSpeed: number;
-    setPlaybackSpeed: (speed: number) => void;
-} & AudioProps> = ({ onNavigate, playAudio, currentlyPlayingUrl, practiceContext, customLessons, allWords, allSentences, playbackSpeed, setPlaybackSpeed }) => {
-    
-    const [practiceType, setPracticeType] = useState<'word' | 'sentence'>('word');
-    const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
-
-    const getInitialQueue = useCallback(() => {
-        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
-            const lesson = customLessons.find(l => l.id === practiceContext.lessonId);
-            if (!lesson) return [];
-            const allItems = srsService.getAllReviewItems();
-            const lessonWordIds = new Set(lesson.vocabularyIds);
-            return allItems.filter(item => item.type === 'word' && lessonWordIds.has(item.id));
-        }
-        return srsService.getReviewQueue().filter(item => item.type === practiceType);
-    }, [practiceContext, customLessons, practiceType]);
-    
-    const [reviewQueue, setReviewQueue] = useState<ReviewItem[]>(getInitialQueue);
-    const [currentItemIndex, setCurrentItemIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
-
-    useEffect(() => {
-        setReviewQueue(getInitialQueue());
-        setCurrentItemIndex(0);
-        setIsFlipped(false);
-    }, [getInitialQueue]);
-
-    const currentItem = reviewQueue[currentItemIndex];
-    
-    const currentCardData = useMemo(() => {
-        if (!currentItem) return null;
-        if (currentItem.type === 'word') return allWords.find(w => w.id === currentItem.id);
-        return allSentences.find(s => s.id === currentItem.id);
-    }, [currentItem, allWords, allSentences]);
-    
-    const handleResponse = (quality: number) => {
-        if (!currentItem || reviewFeedback) return;
-        const updatedItem = srsService.updateReviewItem(currentItem, quality);
-
-        if (updatedItem) {
-            let feedbackText = '';
-            if (updatedItem.interval < 1) {
-                feedbackText = `Review again today.`;
-            } else if (updatedItem.interval === 1) {
-                feedbackText = `Next review tomorrow.`;
-            } else {
-                feedbackText = `Next review in ${updatedItem.interval} days.`;
-            }
-            setReviewFeedback(feedbackText);
-        }
-
-        setTimeout(() => {
-            setReviewFeedback(null);
-            setIsFlipped(false);
-            
-            setTimeout(() => {
-                if (currentItemIndex < reviewQueue.length - 1) {
-                    setCurrentItemIndex(prev => prev + 1);
-                } else {
-                    setReviewQueue(getInitialQueue());
-                    setCurrentItemIndex(0);
-                }
-            }, 300); // Wait for card to flip back before changing content
-        }, 1500); // Time to show feedback
-    };
-    
-    if (reviewQueue.length === 0) {
-        const message = practiceContext.mode === 'custom'
-            ? "You've reviewed all words in this lesson."
-            : `You've completed all due ${practiceType} flashcards. Great job!`;
-            
-        return (
-            <div className="p-4 sm:p-6 text-center">
-                 <div className="max-w-md mx-auto">
-                    <PageHeader title="Flashcards" onBack={() => onNavigate(practiceContext.originView)} />
-                    {practiceContext.mode === 'all' && (
-                        <div className="flex p-1 bg-light-bg dark:bg-dark-bg rounded-lg mb-4">
-                            <button onClick={() => setPracticeType('word')} className={`w-1/2 py-2 font-semibold rounded-md transition-colors ${practiceType === 'word' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>Words</button>
-                            <button onClick={() => setPracticeType('sentence')} className={`w-1/2 py-2 font-semibold rounded-md transition-colors ${practiceType === 'sentence' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>Sentences</button>
-                        </div>
-                    )}
-                    <div className="p-8 bg-white dark:bg-dark-card rounded-2xl shadow-lg">
-                        <h2 className="text-2xl font-bold mb-2">All Done!</h2>
-                        <p className="text-gray-600 dark:text-gray-400">{message}</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    if (!currentCardData) {
-        return <div className="p-4 sm:p-6 text-center">Error: Could not load card data.</div>
-    }
-    
-    const isWord = 'word' in currentCardData;
-    
-    const handleFlip = () => {
-        if (!isFlipped) setIsFlipped(true);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleFlip();
-        }
-    };
-
-    const progressPercentage = reviewQueue.length > 0 ? ((currentItemIndex + 1) / reviewQueue.length) * 100 : 0;
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-md mx-auto">
-                <PageHeader title="Flashcards" onBack={() => onNavigate(practiceContext.originView)} rightContent={<span className="font-semibold text-sm">{currentItemIndex + 1}/{reviewQueue.length}</span>} />
-                
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4">
-                    <div 
-                        className="bg-primary h-2.5 rounded-full transition-all duration-500" 
-                        style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                </div>
-
-                {practiceContext.mode === 'all' && (
-                    <div className="flex p-1 bg-light-bg dark:bg-dark-bg rounded-lg mb-4">
-                        <button onClick={() => setPracticeType('word')} className={`w-1/2 py-2 font-semibold rounded-md transition-colors ${practiceType === 'word' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>Words</button>
-                        <button onClick={() => setPracticeType('sentence')} className={`w-1/2 py-2 font-semibold rounded-md transition-colors ${practiceType === 'sentence' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>Sentences</button>
-                    </div>
-                )}
-
-                <div 
-                    className="[perspective:1000px] group"
-                    onClick={handleFlip}
-                    onKeyDown={handleKeyDown}
-                    tabIndex={isFlipped ? -1 : 0}
-                    role="button"
-                    aria-label={`Flashcard for ${isWord ? currentCardData.word : currentCardData.sentence}. Press to flip.`}
-                >
-                    <div className={`relative w-full h-80 sm:h-96 transition-transform duration-500 ease-in-out [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''} group-hover:scale-[1.02] group-focus:scale-[1.02] group-focus:outline-none group-focus:ring-2 group-focus:ring-primary/50 group-focus:ring-offset-4 group-focus:ring-offset-light-bg dark:group-focus:ring-offset-dark-bg rounded-2xl`}>
-                        <div className="absolute w-full h-full [backface-visibility:hidden] bg-white dark:bg-dark-card rounded-2xl shadow-xl flex flex-col justify-center items-center p-6 text-center cursor-pointer">
-                            <h2 className="text-3xl sm:text-4xl font-bold">{isWord ? currentCardData.word : currentCardData.sentence}</h2>
-                            {isWord && <p className="text-xl text-gray-500 dark:text-gray-400 mt-2">{currentCardData.ipa}</p>}
-                            <p className="mt-8 text-sm text-gray-500">Tap or press Enter to see answer</p>
-                        </div>
-                         <div className="absolute w-full h-full [backface-visibility:hidden] bg-white dark:bg-dark-card rounded-2xl shadow-xl flex flex-col justify-center items-center p-6 text-center [transform:rotateY(180deg)]">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{currentCardData.meaning}</h2>
-                            {isWord && (
-                                <div className="text-center">
-                                    <p className="text-lg italic text-gray-600 dark:text-gray-300">"{currentCardData.example.en}"</p>
-                                    <p className="text-md text-gray-500 dark:text-gray-400 mt-1">"{currentCardData.example.vi}"</p>
-                                </div>
-                            )}
-                             <div className="flex flex-col items-center gap-3 mt-4">
-                                <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
-                                <button onClick={(e) => { e.stopPropagation(); playAudio(currentCardData.audioUrl, playbackSpeed); }} className={`p-3 rounded-full transition-colors ${currentlyPlayingUrl === currentCardData.audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                                    <SpeakerIcon className="w-6 h-6" />
-                                </button>
-                            </div>
-                            {reviewFeedback && (
-                                <div className="absolute inset-0 bg-primary/90 rounded-2xl flex items-center justify-center text-white z-10 animate-fade-in flex-col gap-4 p-4">
-                                    <ReviewIcon className="w-16 h-16 animate-fade-in-scale" style={{animationDelay: '100ms'}}/>
-                                    <p className="text-2xl font-bold animate-fade-in-up" style={{animationDelay: '200ms'}}>{reviewFeedback}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {isFlipped && (
-                     <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-up" style={{animationDelay: '200ms'}}>
-                        <button onClick={() => handleResponse(0)} disabled={!!reviewFeedback} className="p-4 bg-red-500 text-white font-semibold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:scale-100 disabled:cursor-not-allowed">Forgot</button>
-                        <button onClick={() => handleResponse(3)} disabled={!!reviewFeedback} className="p-4 bg-amber-500 text-white font-semibold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:scale-100 disabled:cursor-not-allowed">Hard</button>
-                        <button onClick={() => handleResponse(4)} disabled={!!reviewFeedback} className="p-4 bg-green-500 text-white font-semibold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:scale-100 disabled:cursor-not-allowed">Good</button>
-                        <button onClick={() => handleResponse(5)} disabled={!!reviewFeedback} className="p-4 bg-primary text-white font-semibold rounded-lg shadow-md transition-all transform hover:scale-105 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:scale-100 disabled:cursor-not-allowed">Easy</button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const ReviewView: React.FC<{
-    onNavigate: NavigateFn,
-    customLessons: CustomLesson[],
-}> = ({ onNavigate, customLessons }) => {
-    const reviewModes = [
-        { title: 'All Due Flashcards', description: 'Ôn tập tất cả các thẻ đến hạn bằng SRS', practice: { mode: 'all' as const, lessonId: null, originView: View.Review }, view: View.Flashcards },
-        { title: 'Quick Check (Kiểm tra nhanh)', description: 'Trắc nghiệm nhanh từ vựng', view: View.QuickCheck },
-        { title: 'AI Sentence Correction', description: 'Luyện tập đặt câu với sự trợ giúp của AI', practice: { mode: 'all' as const, lessonId: null, originView: View.Review }, view: View.SentencePractice },
-        ...customLessons.map(l => ({ 
-            title: `Lesson: ${l.name}`, 
-            description: `Ôn tập flashcard ${l.vocabularyIds.length} từ`, 
-            practice: { mode: 'custom' as const, lessonId: l.id, originView: View.Review }, 
-            view: View.Flashcards 
-        }))
-    ];
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                <PageHeader title="Review Modes" onBack={() => onNavigate(View.Home)} />
-                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="space-y-3">
-                        {reviewModes.map(mode => (
-                            <button 
-                                key={mode.title} 
-                                onClick={() => onNavigate(mode.view, mode.practice ? { practice: mode.practice } : undefined)} 
-                                className="w-full text-left p-4 bg-light-bg dark:bg-dark-bg rounded-xl hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
-                            >
-                                <h3 className="font-bold text-lg">{mode.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{mode.description}</p>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-};
-
-const QuickCheckView: React.FC<{ onNavigate: NavigateFn, allWords: Word[] }> = ({ onNavigate, allWords }) => {
-    const QUIZ_LENGTH = 10;
-    const [wordsToQuiz, setWordsToQuiz] = useState<Word[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [currentQuestion, setCurrentQuestion] = useState<{ word: Word, options: string[], answer: string } | null>(null);
-    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [score, setScore] = useState(0);
-
-    const shuffleArray = useCallback((array: any[]) => [...array].sort(() => Math.random() - 0.5), []);
-
-    const generateQuestion = useCallback((index: number, quizWords: Word[]) => {
-        if (quizWords.length === 0 || index >= quizWords.length) return;
-        const word = quizWords[index];
-        const correctAnswer = word.meaning;
-        const wrongAnswers = allWords.filter(w => w.id !== word.id).map(w => w.meaning);
-        const shuffledWrongAnswers = shuffleArray(wrongAnswers).slice(0, 3);
-        const options = shuffleArray([correctAnswer, ...shuffledWrongAnswers]);
-        setCurrentQuestion({ word, options, answer: correctAnswer });
-        setSelectedAnswer(null);
-    }, [shuffleArray, allWords]);
-
-    useEffect(() => {
-        const selectedWords = shuffleArray(allWords).slice(0, QUIZ_LENGTH);
-        setWordsToQuiz(selectedWords);
-        generateQuestion(0, selectedWords);
-    }, [shuffleArray, generateQuestion, allWords]);
-
-    const handleAnswer = (option: string) => {
-        if (selectedAnswer) return;
-        setSelectedAnswer(option);
-        if (option === currentQuestion?.answer) {
-            setScore(s => s + 1);
-        }
-    };
-
-    const handleNext = () => {
-        if (currentIndex < wordsToQuiz.length - 1) {
-            setCurrentIndex(i => i + 1);
-            generateQuestion(currentIndex + 1, wordsToQuiz);
-        } else {
-            alert(`Quiz finished! Your score: ${score}/${wordsToQuiz.length}`);
-            onNavigate(View.Review);
-        }
-    };
-    
-    const getButtonClass = (option: string) => {
-        if (!selectedAnswer) return "bg-light-bg dark:bg-dark-bg hover:bg-primary/10 dark:hover:bg-primary/20";
-        if (option === currentQuestion?.answer) return "bg-green-500 text-white";
-        if (option === selectedAnswer) return "bg-red-500 text-white";
-        return "bg-light-bg dark:bg-dark-bg opacity-60";
-    };
-
-    if (!currentQuestion) return <div className="p-4 text-center">Loading quiz...</div>;
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                 <PageHeader title="Quick Check" onBack={() => onNavigate(View.Review)} rightContent={<div className="font-semibold">Score: {score}</div>} />
-                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="text-right text-sm text-gray-500 dark:text-gray-400 mb-4">Question {currentIndex + 1}/{wordsToQuiz.length}</div>
-                    <div className="text-center mb-8">
-                        <p className="text-gray-500 dark:text-gray-400">What is the meaning of...</p>
-                        <h2 className="text-4xl font-bold my-2">{currentQuestion.word.word}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentQuestion.options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={!!selectedAnswer} className={`w-full p-4 rounded-lg font-semibold text-left transition-colors ${getButtonClass(option)}`}>
-                                {option}
-                            </button>
-                        ))}
-                    </div>
-                     {selectedAnswer && (
-                        <div className="mt-8 text-center">
-                            <button onClick={handleNext} className="px-10 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors">
-                                {currentIndex < wordsToQuiz.length - 1 ? 'Next Question' : 'Finish Quiz'}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const HighlightedSentence: React.FC<{ sentence: string; mistakes: Mistake[] }> = ({ sentence, mistakes }) => {
-    if (!mistakes || mistakes.length === 0) {
-        return <p className="text-lg leading-relaxed">{sentence}</p>;
-    }
-
-    const incorrectParts = mistakes.map(m => m.incorrectPart).filter(Boolean);
-    if (incorrectParts.length === 0) return <p className="text-lg leading-relaxed">{sentence}</p>;
-
-    const escapedParts = incorrectParts.map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const regex = new RegExp(`(${escapedParts.join('|')})`, 'gi');
-    
-    const parts = sentence.split(regex).filter(Boolean);
-
-    return (
-        <p className="text-lg leading-relaxed">
-            {parts.map((part, i) =>
-                incorrectParts.find(p => p.toLowerCase() === part.toLowerCase()) ?
-                <span key={i} className="bg-red-200 dark:bg-red-800/60 rounded px-1 pb-0.5 font-semibold">
-                    {part}
-                </span> 
-                : part
-            )}
-        </p>
-    );
-};
-
-const SentencePracticeView: React.FC<{
-    onNavigate: NavigateFn,
-    practiceContext: PracticeContext,
-    customLessons: CustomLesson[],
-    allWords: Word[],
-}> = ({ onNavigate, practiceContext, customLessons, allWords }) => {
-    const [wordsToPractice, setWordsToPractice] = useState<Word[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [userInput, setUserInput] = useState('');
-    const [feedback, setFeedback] = useState<SentenceFeedback | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        let words: Word[];
-        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
-            const lesson = customLessons.find(l => l.id === practiceContext.lessonId);
-            const wordIdSet = new Set(lesson?.vocabularyIds || []);
-            words = allWords.filter(w => wordIdSet.has(w.id));
-        } else {
-             const dueWords = srsService.getReviewQueue()
-                .filter(item => item.type === 'word')
-                .map(item => allWords.find(w => w.id === item.id))
-                .filter((w): w is Word => !!w);
-            words = [...new Set(dueWords)].slice(0, 10); // Practice up to 10 due words
-        }
-        setWordsToPractice(words);
-        setCurrentIndex(0);
-        setUserInput('');
-        setFeedback(null);
-    }, [practiceContext, customLessons, allWords]);
-
-    const currentWord = wordsToPractice[currentIndex];
-
-    const handleCheckSentence = async () => {
-        if (!userInput.trim() || !currentWord) return;
-        setIsLoading(true);
-        setFeedback(null);
-        const result = await geminiService.checkUserSentence(currentWord.word, userInput);
-        setFeedback(result);
-        setIsLoading(false);
-    };
-    
-    const handleNext = () => {
-        if (currentIndex < wordsToPractice.length - 1) {
-            setCurrentIndex(i => i + 1);
-            setUserInput('');
-            setFeedback(null);
-        } else {
-            alert("Practice session finished!");
-            onNavigate(practiceContext.originView);
-        }
-    };
-
-    if (wordsToPractice.length === 0) {
-        return (
-             <div className="p-4 sm:p-6">
-                <div className="max-w-4xl mx-auto">
-                    <PageHeader title="AI Sentence Practice" onBack={() => onNavigate(practiceContext.originView)} />
-                    <div className="text-center p-8 bg-white dark:bg-dark-card rounded-2xl shadow-lg">
-                        <p>No words to practice in this lesson or no words are due for review.</p>
-                        <p className="text-sm text-gray-500 mt-2">Add words to your lesson or complete some flashcard reviews first!</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    if (!currentWord) return <div className="p-4 text-center">Loading practice session...</div>
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                 <PageHeader title="AI Sentence Practice" onBack={() => onNavigate(practiceContext.originView)} />
-                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="text-right text-sm text-gray-500 dark:text-gray-400 mb-4">Word {currentIndex + 1}/{wordsToPractice.length}</div>
-                    <div className="text-center mb-6">
-                        <p className="text-gray-500 dark:text-gray-400">Write a sentence using the word...</p>
-                        <h2 className="text-4xl font-bold my-2">{currentWord.word} <span className="text-2xl font-normal text-gray-500 dark:text-gray-400">{currentWord.ipa}</span></h2>
-                        <p className="text-gray-500 dark:text-gray-300">({currentWord.meaning})</p>
-                    </div>
-                    <textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} rows={3} placeholder="Type your sentence here..." className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none" disabled={isLoading}></textarea>
-                    
-                    {!feedback && (
-                        <button onClick={handleCheckSentence} disabled={isLoading || !userInput.trim()} className="w-full px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center min-h-[48px]">
-                            {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Check with AI'}
-                        </button>
-                    )}
-                    
-                    {isLoading && (
-                        <div className="mt-6 p-4 rounded-xl bg-light-bg dark:bg-dark-bg text-center">
-                            <div className="flex justify-center items-center gap-2 text-gray-500 dark:text-gray-400">
-                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                <p className="font-semibold">AI is checking your sentence...</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {feedback && !isLoading && (
-                        <div className="mt-6 p-4 rounded-xl bg-light-bg dark:bg-dark-bg animate-fade-in">
-                            {feedback.isError ? (
-                                <div className="text-center p-6 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-200 dark:border-amber-700">
-                                    <svg className="w-16 h-16 text-amber-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                    <h3 className="font-bold text-xl text-amber-800 dark:text-amber-300">Analysis Failed</h3>
-                                    <p className="text-amber-700 dark:text-amber-400 mt-1">{feedback.feedback}</p>
-                                    <p className="text-sm mt-4 text-gray-500 dark:text-gray-400">Here's an example: <br/><em>"{currentWord.example.en}"</em></p>
-                                </div>
-                            ) : feedback.isCorrect ? (
-                                <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-xl border-2 border-green-200 dark:border-green-700">
-                                    <svg className="w-16 h-16 text-green-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    <h3 className="font-bold text-2xl text-green-800 dark:text-green-300">Excellent!</h3>
-                                    <p className="text-green-700 dark:text-green-400 mt-1">{feedback.feedback}</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-xl text-gray-800 dark:text-gray-100">{feedback.feedback}</h3>
-                                    <div>
-                                        <label className="text-sm font-semibold text-gray-500 dark:text-gray-400">Your Sentence:</label>
-                                        <div className="p-3 mt-1 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700"><HighlightedSentence sentence={userInput} mistakes={feedback.mistakes} /></div>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-gray-500 dark:text-gray-400">Corrected Sentence:</label>
-                                        <div className="p-3 mt-1 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
-                                            <p className="text-lg text-green-800 dark:text-green-300 font-semibold">{feedback.correctedSentence}</p>
-                                        </div>
-                                    </div>
-                                    {feedback.mistakes.length > 0 && (
-                                    <div>
-                                        <label className="text-sm font-semibold text-gray-500 dark:text-gray-400">Explanations:</label>
-                                        <div className="space-y-3 mt-2">
-                                            {feedback.mistakes.map((mistake, index) => (
-                                                <div key={index} className="p-3 border-l-4 border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 rounded-r-lg">
-                                                    <p className="font-semibold text-sm">
-                                                        <span className="px-1.5 py-0.5 rounded bg-red-200 dark:bg-red-800/60 text-red-800 dark:text-red-200 line-through">{mistake.incorrectPart}</span>
-                                                        <span className="mx-2">→</span>
-                                                        <span className="px-1.5 py-0.5 rounded bg-green-200 dark:bg-green-800/60 text-green-800 dark:text-green-200">{mistake.suggestion}</span>
-                                                    </p>
-                                                    <p className="text-sm text-gray-700 dark:text-gray-400 mt-2">{mistake.explanation} <span className="font-semibold">({mistake.type})</span></p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {feedback && !isLoading && (
-                         <div className="mt-6 text-center">
-                            <button onClick={handleNext} className="px-8 py-3 bg-secondary text-white font-semibold rounded-lg shadow-md hover:bg-secondary-dark transition-colors">
-                                {currentIndex < wordsToPractice.length - 1 ? 'Next Word' : 'Finish Practice'}
-                            </button>
-                        </div>
-                    )}
-                 </div>
-            </div>
-        </div>
-    );
-};
-
-const FillInTheBlankView: React.FC<{
-    onNavigate: NavigateFn,
-    practiceContext: PracticeContext,
-    allWords: Word[],
-}> = ({ onNavigate, practiceContext, allWords }) => {
-    const [lessonWords, setLessonWords] = useState<Word[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [currentQuestion, setCurrentQuestion] = useState<{ sentence: string, options: string[], answer: string } | null>(null);
-    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [score, setScore] = useState(0);
-
-    const shuffleArray = useCallback((array: any[]) => [...array].sort(() => Math.random() - 0.5), []);
-
-    const generateQuestion = useCallback((index: number, wordsForQuiz: Word[]) => {
-        if (wordsForQuiz.length === 0 || index >= wordsForQuiz.length) return;
-        const word = wordsForQuiz[index];
-        const blankedSentence = word.example.en.replace(new RegExp(`\\b${word.word}\\b`, 'gi'), '______');
-        const correctAnswer = word.word;
-        const wrongAnswers = allWords.filter(w => w.id !== word.id).map(w => w.word);
-        const shuffledWrongAnswers = shuffleArray(wrongAnswers).slice(0, 3);
-        const options = shuffleArray([correctAnswer, ...shuffledWrongAnswers]);
-        setCurrentQuestion({ sentence: blankedSentence, options, answer: correctAnswer });
-        setSelectedAnswer(null);
-    }, [allWords, shuffleArray]);
-
-    useEffect(() => {
-        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
-            const lesson = lessonService.getCustomLessons().find(l => l.id === practiceContext.lessonId);
-            const wordIdSet = new Set(lesson?.vocabularyIds || []);
-            const words = allWords.filter(w => wordIdSet.has(w.id));
-            setLessonWords(words);
-            generateQuestion(0, words);
-        }
-    }, [practiceContext, allWords, generateQuestion]);
-
-    const handleAnswer = (option: string) => {
-        if (selectedAnswer) return;
-        setSelectedAnswer(option);
-        if (option === currentQuestion?.answer) {
-            setScore(s => s + 1);
-        }
-    };
-
-    const handleNext = () => {
-        if (currentIndex < lessonWords.length - 1) {
-            const nextIndex = currentIndex + 1;
-            setCurrentIndex(nextIndex);
-            generateQuestion(nextIndex, lessonWords);
-        } else {
-            alert(`Quiz finished! Your score: ${score}/${lessonWords.length}`);
-            onNavigate(View.LessonDetail);
-        }
-    };
-    
-    const getButtonClass = (option: string) => {
-        if (!selectedAnswer) return "bg-light-bg dark:bg-dark-bg hover:bg-primary/10 dark:hover:bg-primary/20";
-        if (option === currentQuestion?.answer) return "bg-green-500 text-white";
-        if (option === selectedAnswer) return "bg-red-500 text-white";
-        return "bg-light-bg dark:bg-dark-bg opacity-60";
-    };
-    
-    if (lessonWords.length === 0) {
-       return (<div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                <PageHeader title="Fill in the Blank" onBack={() => onNavigate(View.LessonDetail)} />
-                <div className="text-center p-8 bg-white dark:bg-dark-card rounded-2xl shadow-lg">No words in this lesson to practice.</div>
-            </div>
-        </div>)
-    }
-
-    if (!currentQuestion) return <div className="p-4 text-center">Loading quiz...</div>;
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                 <PageHeader title="Fill in the Blank" onBack={() => onNavigate(View.LessonDetail)} rightContent={<div className="font-semibold">Score: {score}</div>} />
-                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="text-right text-sm text-gray-500 dark:text-gray-400 mb-4">Question {currentIndex + 1}/{lessonWords.length}</div>
-                    <div className="text-center mb-8 min-h-[100px] flex flex-col justify-center">
-                        <p className="text-2xl font-semibold my-2 leading-relaxed">{currentQuestion.sentence}</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentQuestion.options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={!!selectedAnswer} className={`w-full p-4 rounded-lg font-semibold text-left transition-colors ${getButtonClass(option)}`}>
-                                {option}
-                            </button>
-                        ))}
-                    </div>
-                     {selectedAnswer && (
-                        <div className="mt-8 text-center">
-                            <button onClick={handleNext} className="px-10 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors">
-                                {currentIndex < lessonWords.length - 1 ? 'Next Question' : 'Finish Quiz'}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const ListeningPracticeView: React.FC<{
-    onNavigate: NavigateFn,
-    practiceContext: PracticeContext,
-    allWords: Word[],
-    playbackSpeed: number;
-    setPlaybackSpeed: (speed: number) => void;
-} & AudioProps> = ({ onNavigate, practiceContext, allWords, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
-    const QUIZ_LENGTH = 10;
-    const [lessonWords, setLessonWords] = useState<Word[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [currentQuestion, setCurrentQuestion] = useState<{ word: Word, options: string[], answer: string } | null>(null);
-    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [score, setScore] = useState(0);
-
-    const shuffleArray = useCallback((array: any[]) => [...array].sort(() => Math.random() - 0.5), []);
-    
-    const generateQuestion = useCallback((index: number, wordsForQuiz: Word[]) => {
-        if (wordsForQuiz.length === 0 || index >= wordsForQuiz.length) return;
-        const word = wordsForQuiz[index];
-        const correctAnswer = word.word;
-        const wrongAnswers = allWords.filter(w => w.id !== word.id).map(w => w.word);
-        const shuffledWrongAnswers = shuffleArray(wrongAnswers).slice(0, 3);
-        const options = shuffleArray([correctAnswer, ...shuffledWrongAnswers]);
-        setCurrentQuestion({ word, options, answer: correctAnswer });
-        setSelectedAnswer(null);
-        playAudio(word.audioUrl, playbackSpeed);
-    }, [allWords, shuffleArray, playAudio, playbackSpeed]);
-
-    useEffect(() => {
-        let words: Word[];
-        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
-            const lesson = lessonService.getCustomLessons().find(l => l.id === practiceContext.lessonId);
-            const wordIdSet = new Set(lesson?.vocabularyIds || []);
-            words = allWords.filter(w => wordIdSet.has(w.id));
-        } else {
-             words = shuffleArray(allWords).slice(0, QUIZ_LENGTH);
-        }
-        setLessonWords(words);
-        generateQuestion(0, words);
-    }, [practiceContext, allWords, generateQuestion, shuffleArray]);
-
-    const handleAnswer = (option: string) => {
-        if (selectedAnswer) return;
-        setSelectedAnswer(option);
-        if (option === currentQuestion?.answer) {
-            setScore(s => s + 1);
-        }
-    };
-
-    const handleNext = () => {
-        if (currentIndex < lessonWords.length - 1) {
-            const nextIndex = currentIndex + 1;
-            setCurrentIndex(nextIndex);
-            generateQuestion(nextIndex, lessonWords);
-        } else {
-            alert(`Quiz finished! Your score: ${score}/${lessonWords.length}`);
-            onNavigate(practiceContext.originView);
-        }
-    };
-
-    const getButtonClass = (option: string) => {
-        if (!selectedAnswer) return "bg-light-bg dark:bg-dark-bg hover:bg-primary/10 dark:hover:bg-primary/20";
-        if (option === currentQuestion?.answer) return "bg-green-500 text-white";
-        if (option === selectedAnswer) return "bg-red-500 text-white";
-        return "bg-light-bg dark:bg-dark-bg opacity-60";
-    };
-
-    if (lessonWords.length === 0) {
-       return (<div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                <PageHeader title="Listening Practice" onBack={() => onNavigate(practiceContext.originView)} />
-                <div className="text-center p-8 bg-white dark:bg-dark-card rounded-2xl shadow-lg">No words in this lesson to practice.</div>
-            </div>
-        </div>)
-    }
-
-    if (!currentQuestion) return <div className="p-4 text-center">Loading quiz...</div>;
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                 <PageHeader title="Listening Practice" onBack={() => onNavigate(practiceContext.originView)} rightContent={<div className="font-semibold">Score: {score}</div>} />
-                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="text-right text-sm text-gray-500 dark:text-gray-400 mb-4">Question {currentIndex + 1}/{lessonWords.length}</div>
-                    <div className="text-center mb-8">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">Listen and choose the correct word.</p>
-                        <button onClick={() => playAudio(currentQuestion.word.audioUrl, playbackSpeed)} className={`mx-auto p-6 rounded-full transition-colors ${currentlyPlayingUrl === currentQuestion.word.audioUrl ? 'bg-primary text-white' : 'bg-secondary text-white hover:bg-secondary-dark'}`}>
-                           <SpeakerIcon className="w-12 h-12" />
-                        </button>
-                        <div className="flex justify-center mt-4">
-                            <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentQuestion.options.map(option => (
-                            <button key={option} onClick={() => handleAnswer(option)} disabled={!!selectedAnswer} className={`w-full p-4 rounded-lg font-semibold text-left transition-colors ${getButtonClass(option)}`}>
-                                {option}
-                            </button>
-                        ))}
-                    </div>
-                     {selectedAnswer && (
-                        <div className="mt-8 text-center">
-                            <button onClick={handleNext} className="px-10 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors">
-                                {currentIndex < lessonWords.length - 1 ? 'Next Question' : 'Finish Quiz'}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const ShadowingView: React.FC<{
-    onNavigate: NavigateFn,
-    words: Word[],
-    sentences: Sentence[],
-    playAudio: (url: string | undefined, speed?: number) => void,
-    currentlyPlayingUrl: string | null,
-    playbackSpeed: number,
-    setPlaybackSpeed: (speed: number) => void,
-}> = ({ onNavigate, words, sentences, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
-    const [practiceMode, setPracticeMode] = useState<'word' | 'sentence' | 'custom'>('word');
-    const [practiceModalData, setPracticeModalData] = useState<{ targetText: string, ipa?: string, audioUrl?: string } | null>(null);
-
-    const [customText, setCustomText] = useState('');
-    const [isPreparing, setIsPreparing] = useState(false);
-    const [prepError, setPrepError] = useState<string | null>(null);
-
-    const itemsToList = practiceMode === 'word' ? words : sentences;
-
-    const createTtsApiUrl = (text: string) => `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`;
-
-    const handlePracticeCustom = async () => {
-        const trimmedText = customText.trim();
-        if (!trimmedText) {
-            setPrepError("Please enter some text to practice.");
-            return;
-        }
-        setIsPreparing(true);
-        setPrepError(null);
-        
-        const result = await geminiService.getIpaForText(trimmedText);
-        if (result.error) {
-            setPrepError(result.error);
-            setIsPreparing(false);
-            return;
-        }
-
-        const audioUrl = createTtsApiUrl(trimmedText);
-        setPracticeModalData({ targetText: trimmedText, ipa: result.ipa, audioUrl });
-        setIsPreparing(false);
-    };
-
-    const handleItemClick = (item: Word | Sentence) => {
-        const isWord = 'word' in item;
-        setPracticeModalData({
-            targetText: isWord ? item.word : item.sentence,
-            ipa: item.ipa,
-            audioUrl: item.audioUrl,
-        });
-    };
-
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-                <PageHeader title="Shadowing Practice" onBack={() => onNavigate(View.Home)} />
-                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6">
-                    <div className="flex p-1 bg-light-bg dark:bg-dark-bg rounded-lg mb-6">
-                        <button onClick={() => setPracticeMode('word')} className={`w-1/3 py-2.5 font-semibold rounded-md transition-colors ${practiceMode === 'word' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>
-                            Words
-                        </button>
-                        <button onClick={() => setPracticeMode('sentence')} className={`w-1/3 py-2.5 font-semibold rounded-md transition-colors ${practiceMode === 'sentence' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>
-                            Sentences
-                        </button>
-                        <button onClick={() => setPracticeMode('custom')} className={`w-1/3 py-2.5 font-semibold rounded-md transition-colors ${practiceMode === 'custom' ? 'bg-primary text-white shadow' : 'text-gray-500'}`}>
-                            Custom
-                        </button>
-                    </div>
-
-                    {practiceMode === 'custom' ? (
-                        <div className="animate-fade-in">
-                            <h3 className="text-lg font-bold mb-2">Custom Practice</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Enter any word, sentence, or paragraph you want to practice.</p>
-                            <textarea
-                                value={customText}
-                                onChange={(e) => setCustomText(e.target.value)}
-                                rows={5}
-                                placeholder="e.g., 'The quick brown fox jumps over the lazy dog.'"
-                                className="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
+                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                            <input
+                                type="text"
+                                placeholder={activeTab === 'sentences' ? "Search sentences..." : "Search conversations..."}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
                             />
-                            {prepError && <p className="text-red-500 text-sm mb-3 text-center">{prepError}</p>}
-                            <button
-                                onClick={handlePracticeCustom}
-                                disabled={isPreparing}
-                                className="w-full px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-light transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
+                            <select
+                                value={levelFilter}
+                                onChange={e => setLevelFilter(e.target.value as Level | 'all')}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
                             >
-                                {isPreparing ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        <span>Preparing...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <MicrophoneIcon className="w-5 h-5" />
-                                        <span>Practice This Text</span>
-                                    </>
-                                )}
+                                <option value="all">All Levels</option>
+                                {Object.values(Level).map(level => <option key={level} value={level}>{level}</option>)}
+                            </select>
+                            <button 
+                                onClick={activeTab === 'sentences' ? onAddSentence : () => setShowAddConvoModal(true)} 
+                                className="px-4 py-2 bg-secondary text-white font-semibold rounded-lg shadow-sm hover:bg-secondary-light transition-colors text-sm whitespace-nowrap"
+                            >
+                                {activeTab === 'sentences' ? 'Add Sentence' : 'Add Conversation'}
                             </button>
                         </div>
-                    ) : (
-                        <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-                            {itemsToList.map(item => {
-                                const isWord = 'word' in item;
-                                const text = isWord ? item.word : item.sentence;
-                                return (
-                                    <div key={item.id} className="p-3 bg-light-bg dark:bg-dark-bg rounded-xl flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold">{text}</p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.ipa}</p>
-                                        </div>
-                                        <button 
-                                            onClick={() => handleItemClick(item)}
-                                            className="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" 
-                                            aria-label={`Practice pronunciation of ${text}`}
-                                        >
-                                            <MicrophoneIcon className="w-6 h-6 text-emerald-500" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                        
+                        <div className="space-y-3 max-h-[65vh] overflow-y-auto">
+                            {activeTab === 'sentences' ? 
+                                filteredSentences.map(s => <SentenceListItem key={s.id} sentence={s} playAudio={playAudio} currentlyPlayingUrl={currentlyPlayingUrl} playbackSpeed={playbackSpeed} setPlaybackSpeed={setPlaybackSpeed} onUpdateSentence={onUpdateSentence} onDeleteSentence={onDeleteSentence} onPractice={setSentenceToPractice} />)
+                                :
+                                filteredConversations.map(c => <ConversationListItem key={c.id} conversation={c} playAudio={playAudio} currentlyPlayingUrl={currentlyPlayingUrl} onDeleteConversation={onDeleteConversation} />)
+                            }
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
-
-            {practiceModalData && (
+            {showAddConvoModal && <AddConversationModal onClose={() => setShowAddConvoModal(false)} onAddConversation={onAddConversation} />}
+            {sentenceToPractice && (
                 <PronunciationPracticeModal
-                    targetText={practiceModalData.targetText}
-                    ipa={practiceModalData.ipa}
-                    audioUrl={practiceModalData.audioUrl}
-                    onClose={() => setPracticeModalData(null)}
+                    targetText={sentenceToPractice.sentence}
+                    ipa={sentenceToPractice.ipa!}
+                    audioUrl={sentenceToPractice.audioUrl}
+                    onClose={() => setSentenceToPractice(null)}
                     playAudio={playAudio}
                     currentlyPlayingUrl={currentlyPlayingUrl}
                     playbackSpeed={playbackSpeed}
@@ -2907,824 +1878,847 @@ const ShadowingView: React.FC<{
     );
 };
 
-const PlaceholderView: React.FC<{ featureName: string; onNavigate: () => void }> = ({ featureName, onNavigate }) => (
-    <div className="p-4 text-center">
-        <PageHeader title={featureName} onBack={onNavigate} />
-        <div className="mt-8">
-            <h2 className="text-2xl font-bold">Coming Soon!</h2>
-            <p className="text-gray-500 mt-2">The "{featureName}" feature is under construction.</p>
-        </div>
-    </div>
-);
-
-const BottomNav: React.FC<{ currentView: View; onNavigate: (view: View) => void }> = ({ currentView, onNavigate }) => {
-    const navItems = [
-        { view: View.Home, icon: HomeIcon, label: 'Home' },
-        { view: View.Vocabulary, icon: VocabularyIcon, label: 'Words' },
-        { view: View.Sentences, icon: SentencesIcon, label: 'Sentences' },
-        { view: View.Review, icon: ReviewIcon, label: 'Review' },
-    ];
-
-    return (
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-dark-card border-t border-gray-200 dark:border-gray-700 flex justify-around items-center z-40">
-            {navItems.map(item => (
-                <button 
-                    key={item.label}
-                    onClick={() => onNavigate(item.view)}
-                    className={`flex flex-col items-center justify-center w-full h-full transition-colors ${currentView === item.view ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-primary-light'}`}
-                >
-                    <item.icon className="w-7 h-7 mb-1" />
-                    <span className="text-xs font-semibold">{item.label}</span>
-                </button>
-            ))}
-        </nav>
-    );
-};
-
-const AITUTOR_HISTORY_KEY = 'zenglish_aitutor_history';
-
-const AITutorView: React.FC<{ onNavigate: NavigateFn }> = ({ onNavigate }) => {
-    const [messages, setMessages] = useState<ChatEntry[]>([
-        { speaker: 'Zen', text: 'Hi there! I\'m Zen, your friendly AI English coach. Ready to practice? You can ask me about grammar, vocabulary, or just have a chat!' }
-    ]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const messagesRef = useRef(messages);
-    messagesRef.current = messages;
-
-    const [conversationHistory, setConversationHistory] = useState<ConversationRecord[]>([]);
-    const [currentView, setCurrentView] = useState<'chat' | 'history'>('chat');
-    const [selectedConversation, setSelectedConversation] = useState<ConversationRecord | null>(null);
-
-    useEffect(() => {
-        try {
-            const storedHistory = localStorage.getItem(AITUTOR_HISTORY_KEY);
-            if (storedHistory) {
-                setConversationHistory(JSON.parse(storedHistory));
-            }
-        } catch (error) {
-            console.error("Failed to load AI Tutor history:", error);
-        }
-    }, []);
-
-    const saveConversation = useCallback((msgs: ChatEntry[]) => {
-        if (msgs.length <= 1) return; // Don't save empty/initial chats
-        const newRecord: ConversationRecord = {
-            id: new Date().toISOString(),
-            timestamp: new Date().toISOString(),
-            messages: msgs,
-        };
-        setConversationHistory(prevHistory => {
-            const updatedHistory = [newRecord, ...prevHistory];
-            try {
-                localStorage.setItem(AITUTOR_HISTORY_KEY, JSON.stringify(updatedHistory));
-            } catch (error) {
-                console.error("Failed to save AI Tutor history:", error);
-            }
-            return updatedHistory;
-        });
-    }, []);
-
-    const deleteConversation = (id: string) => {
-        if (window.confirm("Are you sure you want to delete this chat?")) {
-            const updatedHistory = conversationHistory.filter(c => c.id !== id);
-            setConversationHistory(updatedHistory);
-            try {
-                localStorage.setItem(AITUTOR_HISTORY_KEY, JSON.stringify(updatedHistory));
-            } catch (error) {
-                console.error("Failed to delete chat:", error);
-            }
-        }
-    };
-    
-    // Save conversation on component unmount or view change
-    useEffect(() => {
-        return () => {
-            saveConversation(messagesRef.current);
-        };
-    }, [saveConversation]);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, isLoading, currentView, selectedConversation]);
-
-    useEffect(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-            textarea.style.height = 'auto';
-            const scrollHeight = textarea.scrollHeight;
-            const maxHeight = 160;
-            if (scrollHeight > maxHeight) {
-                textarea.style.height = `${maxHeight}px`;
-                textarea.style.overflowY = 'auto';
-            } else {
-                textarea.style.height = `${scrollHeight}px`;
-                textarea.style.overflowY = 'hidden';
-            }
-        }
-    }, [input, currentView]);
-
-    const handleSendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmedInput = input.trim();
-        if (!trimmedInput || isLoading) return;
-
-        const userMessage: ChatEntry = { speaker: 'You', text: trimmedInput };
-        const currentMessages = [...messages, userMessage];
-        setMessages(currentMessages);
-        setInput('');
-        setIsLoading(true);
-
-        const historyForApi: Content[] = messages.map(msg => ({
-            role: msg.speaker === 'You' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-        }));
-
-        try {
-            const responseText = await geminiService.getAITutorResponse(historyForApi, trimmedInput);
-            const modelMessage: ChatEntry = { speaker: 'Zen', text: responseText };
-            setMessages(prev => [...prev, modelMessage]);
-        } catch (error) {
-            const errorMessage: ChatEntry = { speaker: 'Zen', text: "Sorry, I'm having trouble connecting right now. Please try again later." };
-            setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    const startNewChat = () => {
-        saveConversation(messages);
-        setMessages([
-             { speaker: 'Zen', text: 'Hi there! Let\'s start a new conversation. What\'s on your mind?' }
-        ]);
-        setCurrentView('chat');
-        setSelectedConversation(null);
-    }
-
-    const ChatView = () => (
-      <>
-        <div className="flex-grow space-y-4 overflow-y-auto pr-2 -mr-2">
-            {messages.map((message, index) => (
-                <div key={index} className={`flex items-end gap-3 ${message.speaker === 'You' ? 'justify-end' : 'justify-start'}`}>
-                    {message.speaker === 'Zen' && <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center self-start"><AITutorIcon className="w-5 h-5 text-white" /></div>}
-                    <div className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg p-3 rounded-2xl ${message.speaker === 'You' ? 'bg-primary text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none'}`}>
-                        <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
-                    </div>
-                    {message.speaker === 'You' && <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 flex items-center justify-center self-start"><UserAvatarIcon className="w-5 h-5 text-gray-600 dark:text-gray-300"/></div>}
-                </div>
-            ))}
-            {isLoading && (
-                <div className="flex items-end gap-3 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center self-start"><AITutorIcon className="w-5 h-5 text-white" /></div>
-                    <div className="max-w-sm p-3 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none">
-                        <div className="flex space-x-1">
-                            <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                            <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                            <span className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"></span>
-                        </div>
-                    </div>
-                </div>
-            )}
-            <div ref={messagesEndRef} />
-        </div>
-        <form onSubmit={handleSendMessage} className="mt-4 flex items-start gap-3">
-            <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e as any);
-                    }
-                }}
-                placeholder="Ask Zen anything..."
-                rows={1}
-                className="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-none max-h-40"
-                disabled={isLoading}
-            />
-            <button type="submit" disabled={isLoading || !input.trim()} className="w-12 h-12 flex-shrink-0 bg-primary text-white font-semibold rounded-lg shadow-sm hover:bg-primary-light transition-colors flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed">
-                <SendIcon className="w-6 h-6" />
-            </button>
-        </form>
-      </>
-    );
-    
-    const HistoryListView = () => (
-        <div className="flex flex-col h-full">
-            <button onClick={startNewChat} className="w-full mb-3 py-2 px-4 bg-secondary text-white font-semibold rounded-lg shadow-sm hover:bg-secondary-dark transition-colors">
-                + Start New Chat
-            </button>
-            <div className="flex-grow overflow-y-auto space-y-3">
-                {conversationHistory.length === 0 ? (
-                    <div className="text-center text-gray-400 py-10">
-                        <p>No saved chats yet.</p>
-                    </div>
-                ) : (
-                    conversationHistory.map(record => (
-                        <div key={record.id} className="p-3 bg-light-bg dark:bg-dark-bg rounded-lg flex justify-between items-center gap-2">
-                            <button onClick={() => { setSelectedConversation(record); }} className="flex-grow text-left">
-                                <p className="font-semibold truncate">Chat on {new Date(record.timestamp).toLocaleDateString()}</p>
-                                <p className="text-xs text-gray-500">{new Date(record.timestamp).toLocaleTimeString()} · {record.messages.length} messages</p>
-                            </button>
-                            <button onClick={() => deleteConversation(record.id)} className="p-2 rounded-full hover:bg-red-500/10 flex-shrink-0" aria-label="Delete chat">
-                                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                            </button>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
-    );
-    
-    const HistoryDetailView = () => (
-        <div className="flex flex-col h-full">
-            <button onClick={() => setSelectedConversation(null)} className="flex items-center gap-2 font-semibold text-sm text-gray-500 dark:text-gray-400 mb-3 flex-shrink-0">
-                <BackIcon className="w-4 h-4" /> Back to History
-            </button>
-             <div className="flex-grow overflow-y-auto space-y-4">
-                 {selectedConversation?.messages.map((entry, index) => (
-                    <div key={index} className={`flex items-start gap-3 ${entry.speaker === 'You' ? 'justify-end' : 'justify-start'}`}>
-                        {entry.speaker === 'Zen' && <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center self-start"><AITutorIcon className="w-5 h-5 text-white" /></div>}
-                        <div className={`max-w-xs sm:max-w-sm md:max-w-md p-3 rounded-2xl ${entry.speaker === 'You' ? 'bg-primary text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none'}`}>
-                            <p className="whitespace-pre-wrap leading-relaxed">{entry.text}</p>
-                        </div>
-                        {entry.speaker === 'You' && <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 flex items-center justify-center self-start"><UserAvatarIcon className="w-5 h-5 text-gray-600 dark:text-gray-300"/></div>}
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-        </div>
-    );
-    
-    const renderContent = () => {
-        if (currentView === 'history') {
-            return selectedConversation ? <HistoryDetailView /> : <HistoryListView />;
-        }
-        return <ChatView />;
-    }
-
-    const handleToggleView = () => {
-        if (currentView === 'chat') {
-            saveConversation(messages);
-            setMessages([{ speaker: 'Zen', text: 'Hi there! I\'m Zen, your friendly AI English coach. Ready to practice? You can ask me about grammar, vocabulary, or just have a chat!' }]);
-        }
-        setCurrentView(v => v === 'chat' ? 'history' : 'chat');
-        setSelectedConversation(null);
-    }
-
-    return (
-        <div className="p-4 sm:p-6 h-[calc(100vh-160px)] flex flex-col">
-            <div className="max-w-4xl mx-auto w-full flex-grow flex flex-col min-h-0">
-                <PageHeader 
-                    title={currentView === 'chat' ? 'AI Tutor' : (selectedConversation ? 'Chat Details' : 'Chat History')}
-                    onBack={() => onNavigate(View.Home)} 
-                    rightContent={
-                        <button onClick={handleToggleView} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            {currentView === 'chat' ? <HistoryIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" /> : <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
-                        </button>
-                    }
-                />
-                 <div className="flex-grow bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col overflow-hidden min-h-0">
-                    {renderContent()}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Live API Helpers & Component ---
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
-function encode(bytes: Uint8Array) {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function createBlob(data: Float32Array): Blob {
-  const l = data.length;
-  const int16 = new Int16Array(l);
-  for (let i = 0; i < l; i++) {
-    int16[i] = data[i] * 32768;
-  }
-  return {
-    data: encode(new Uint8Array(int16.buffer)),
-    mimeType: 'audio/pcm;rate=16000',
-  };
-}
-
-const CONVERSATION_HISTORY_KEY = 'zengling_conversation_history';
-
-const AIConversationView: React.FC<{ onNavigate: NavigateFn }> = ({ onNavigate }) => {
-    // Local interface as LiveSession is not exported from the SDK
-    interface LiveSession {
-        close(): void;
-        sendRealtimeInput(input: { media: Blob }): void;
-    }
-    
-    const [status, setStatus] = useState<'idle' | 'connecting' | 'active' | 'error'>('idle');
-    const [turnStatus, setTurnStatus] = useState<'listening' | 'userSpeaking' | 'modelSpeaking' | 'idle'>('idle');
-    const [history, setHistory] = useState<ChatEntry[]>([]);
-    const historyRef = useRef(history);
-    historyRef.current = history;
-    
-    const [conversationHistory, setConversationHistory] = useState<ConversationRecord[]>([]);
-    const [currentView, setCurrentView] = useState<'chat' | 'history'>('chat');
-    
-    const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
-    const inputAudioContextRef = useRef<AudioContext | null>(null);
-    const outputAudioContextRef = useRef<AudioContext | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
-    const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-    const outputSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-    const nextStartTimeRef = useRef(0);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        try {
-            const storedHistory = localStorage.getItem(CONVERSATION_HISTORY_KEY);
-            if (storedHistory) {
-                setConversationHistory(JSON.parse(storedHistory));
-            }
-        } catch (error) {
-            console.error("Failed to load conversation history:", error);
-        }
-    }, []);
-
-    const saveConversation = useCallback((messages: ChatEntry[]) => {
-        if (messages.length === 0) return;
-        const newRecord: ConversationRecord = {
-            id: new Date().toISOString(),
-            timestamp: new Date().toISOString(),
-            messages: messages,
-        };
-        setConversationHistory(prevHistory => {
-            const updatedHistory = [newRecord, ...prevHistory];
-            try {
-                localStorage.setItem(CONVERSATION_HISTORY_KEY, JSON.stringify(updatedHistory));
-            } catch (error) {
-                console.error("Failed to save conversation history:", error);
-            }
-            return updatedHistory;
-        });
-    }, []);
-    
-    const deleteConversation = (id: string) => {
-        if(window.confirm("Are you sure you want to delete this conversation?")) {
-            const updatedHistory = conversationHistory.filter(c => c.id !== id);
-            setConversationHistory(updatedHistory);
-            try {
-                localStorage.setItem(CONVERSATION_HISTORY_KEY, JSON.stringify(updatedHistory));
-            } catch(error) {
-                console.error("Failed to delete conversation:", error);
-            }
-        }
-    };
-
-
-    const handleStopSession = useCallback(async () => {
-        if (sessionPromiseRef.current) {
-            try {
-                const session = await sessionPromiseRef.current;
-                session.close();
-            } catch (e) {
-                console.error("Error closing session:", e);
-            }
-        }
-        streamRef.current?.getTracks().forEach(track => track.stop());
-        mediaStreamSourceRef.current?.disconnect();
-        scriptProcessorRef.current?.disconnect();
-        if (inputAudioContextRef.current?.state !== 'closed') {
-           inputAudioContextRef.current?.close().catch(e => console.error("Error closing input context:", e));
-        }
-        if (outputAudioContextRef.current?.state !== 'closed') {
-            outputAudioContextRef.current?.close().catch(e => console.error("Error closing output context:", e));
-        }
-        
-        saveConversation(historyRef.current.filter(h => h.isFinal && h.text.trim()));
-
-        sessionPromiseRef.current = null;
-        streamRef.current = null;
-        mediaStreamSourceRef.current = null;
-        scriptProcessorRef.current = null;
-        inputAudioContextRef.current = null;
-        outputAudioContextRef.current = null;
-        outputSourcesRef.current.clear();
-        nextStartTimeRef.current = 0;
-
-        setStatus('idle');
-        setTurnStatus('idle');
-    }, [saveConversation]);
-    
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [history]);
-
-    const handleStartSession = useCallback(async () => {
-        setStatus('connecting');
-        setHistory([]);
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            
-            const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-            const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-            inputAudioContextRef.current = inputAudioContext;
-            outputAudioContextRef.current = outputAudioContext;
-
-            const sessionPromise = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-                callbacks: {
-                    onopen: async () => {
-                        setStatus('active');
-                        setTurnStatus('listening');
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        streamRef.current = stream;
-
-                        const source = inputAudioContext.createMediaStreamSource(stream);
-                        const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
-                        scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
-                            const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                            const pcmBlob = createBlob(inputData);
-                            sessionPromiseRef.current?.then((session) => {
-                                session.sendRealtimeInput({ media: pcmBlob });
-                            });
-                        };
-                        source.connect(scriptProcessor);
-                        scriptProcessor.connect(inputAudioContext.destination);
-                        mediaStreamSourceRef.current = source;
-                        scriptProcessorRef.current = scriptProcessor;
-                    },
-                    onmessage: async (message: LiveServerMessage) => {
-                        let hasUserInput = false;
-                        let hasModelOutput = false;
-
-                        if (message.serverContent?.inputTranscription) {
-                            hasUserInput = true;
-                            const text = message.serverContent.inputTranscription.text;
-                            setHistory(prev => {
-                                const last = prev[prev.length - 1];
-                                if (last && last.speaker === 'You' && !last.isFinal) {
-                                    return [...prev.slice(0, -1), { ...last, text: last.text + text }];
-                                }
-                                return [...prev, { speaker: 'You', text, isFinal: false }];
-                            });
-                        }
-                        
-                        if (message.serverContent?.outputTranscription) {
-                            hasModelOutput = true;
-                            const text = message.serverContent.outputTranscription.text;
-                            setHistory(prev => {
-                                const last = prev[prev.length - 1];
-                                if (last && last.speaker === 'Zen' && !last.isFinal) {
-                                    return [...prev.slice(0, -1), { ...last, text: last.text + text }];
-                                }
-                                return [...prev, { speaker: 'Zen', text, isFinal: false }];
-                            });
-                        }
-                        
-                        if (hasUserInput) setTurnStatus('userSpeaking');
-                        if (hasModelOutput) setTurnStatus('modelSpeaking');
-
-                        if (message.serverContent?.turnComplete) {
-                            setHistory(prev => prev.map(entry => ({ ...entry, isFinal: true })));
-                            setTurnStatus('listening');
-                        }
-
-                        const interrupted = message.serverContent?.interrupted;
-                        if (interrupted) {
-                            for (const source of outputSourcesRef.current.values()) {
-                                source.stop();
-                                outputSourcesRef.current.delete(source);
-                            }
-                            nextStartTimeRef.current = 0;
-                        }
-
-                        const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-                        if (base64Audio) {
-                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContext.currentTime);
-                            const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext, 24000, 1);
-                            const source = outputAudioContext.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(outputAudioContext.destination);
-                            
-                            const currentSources = outputSourcesRef.current;
-                            source.addEventListener('ended', () => {
-                                currentSources.delete(source);
-                            });
-                            source.start(nextStartTimeRef.current);
-                            nextStartTimeRef.current += audioBuffer.duration;
-                            currentSources.add(source);
-                        }
-                    },
-                    onerror: (e: ErrorEvent) => {
-                        console.error('Session error:', e);
-                        setStatus('error');
-                        handleStopSession();
-                    },
-                    onclose: () => {
-                        handleStopSession();
-                    },
-                },
-                config: {
-                    responseModalities: [Modality.AUDIO],
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-                    systemInstruction: `You are Zen, a friendly, empathetic, and patient English conversation partner. Your personality is curious and encouraging. Your primary goal is to help the user practice speaking natural, conversational English in a relaxed environment.
-
-Core Instructions:
-1.  **Be Conversational & Natural**: Keep your responses relatively short and use natural-sounding language. Avoid being robotic. Use interjections like "Oh, that's interesting!" or "I see." to sound more human.
-2.  **Always Encourage More Speaking**: End every response with an open-ended question to keep the conversation flowing.
-3.  **Maintain Context & Memory**: Actively listen and remember what the user has said earlier in this conversation. Refer back to previous points when relevant. For example: "A moment ago, you said you like movies. What's the best one you've seen recently?"
-4.  **Summarize and Clarify**: If a user's point is complex or a bit unclear, briefly summarize it to confirm your understanding ("So, if I'm hearing you right, you think...?") or ask a gentle clarifying question.
-5.  **Introduce New Topics Smoothly**: If the conversation stalls, gracefully introduce a new, related topic. For instance, if you were talking about food, you could transition to travel by saying, "Speaking of great food, have you ever traveled somewhere just to try the local cuisine?"
-6.  **Do Not Be a Teacher (Unless Asked)**: Your main role is a conversation partner, not a grammar teacher. Do not correct the user's grammar or pronunciation unless they explicitly ask you to. Focus on understanding and responding to their meaning.`,
-                    inputAudioTranscription: {},
-                    outputAudioTranscription: {},
-                },
-            });
-            sessionPromiseRef.current = sessionPromise;
-        } catch (err) {
-            console.error("Failed to start session:", err);
-            setStatus('error');
-        }
-    }, [handleStopSession]);
-    
-    // Automatically start the session on component mount.
-    useEffect(() => {
-        handleStartSession();
-        // The cleanup is handled by the main unmount effect.
-    }, [handleStartSession]);
-
-    // Main unmount cleanup.
-    useEffect(() => {
-        return () => {
-            handleStopSession();
-        };
-    }, [handleStopSession]);
-
-
-    const getStatusInfo = () => {
-        switch (status) {
-            case 'idle': return { text: 'Tap to start speaking practice', color: 'text-gray-500' };
-            case 'connecting': return { text: 'Connecting to AI partner...', color: 'text-amber-500' };
-            case 'error': return { text: 'An error occurred. Please try again.', color: 'text-red-500' };
-            case 'active':
-                switch (turnStatus) {
-                    case 'listening': return { text: 'Zen is listening...', color: 'text-green-500' };
-                    case 'userSpeaking': return { text: 'You are speaking...', color: 'text-primary' };
-                    case 'modelSpeaking': return { text: 'Zen is speaking...', color: 'text-secondary-dark' };
-                    default: return { text: 'Live conversation is active', color: 'text-green-500' };
-                }
-        }
-    };
-    
-    const ChatView = () => (
-        <>
-            <div className="flex-grow space-y-4 overflow-y-auto pr-2 -mr-2 mb-4">
-                {history.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
-                        <AIConversationIcon className="w-16 h-16 mb-4" />
-                        <p className="font-semibold">Your conversation will appear here.</p>
-                    </div>
-                )}
-                {history.map((entry, index) => (
-                        <div key={index} className={`flex items-start gap-3 ${entry.speaker === 'You' ? 'justify-end' : 'justify-start'}`}>
-                        {entry.speaker === 'Zen' && <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center self-start"><AITutorIcon className="w-5 h-5 text-white" /></div>}
-                        <div className={`max-w-xs sm:max-w-sm md:max-w-md p-3 rounded-2xl ${entry.speaker === 'You' ? 'bg-primary text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none'}`}>
-                            <p className="whitespace-pre-wrap leading-relaxed">{entry.text}</p>
-                        </div>
-                        {entry.speaker === 'You' && <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 flex items-center justify-center self-start"><UserAvatarIcon className="w-5 h-5 text-gray-600 dark:text-gray-300"/></div>}
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-                <div className="text-center mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className={`font-semibold text-sm ${getStatusInfo().color}`}>{getStatusInfo().text}</p>
-                <button 
-                    onClick={status === 'active' ? handleStopSession : handleStartSession}
-                    disabled={status === 'connecting'}
-                    className={`mt-3 relative w-24 h-24 rounded-full flex items-center justify-center transition-colors shadow-lg disabled:bg-gray-400 text-white
-                        ${status === 'active' ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-light'}`}
-                    aria-label={status === 'active' ? 'End Conversation' : 'Start Conversation'}
-                >
-                    <MicrophoneIcon className="w-10 h-10" />
-                    {turnStatus === 'listening' && <span className="absolute inset-0 rounded-full bg-white/20 animate-ping"></span>}
-                </button>
-            </div>
-        </>
-    );
-    
-    const [selectedConversation, setSelectedConversation] = useState<ConversationRecord | null>(null);
-
-    const HistoryListView = () => (
-        <div className="flex-grow overflow-y-auto space-y-3">
-            {conversationHistory.length === 0 ? (
-                <div className="text-center text-gray-400 py-10">
-                    <p>No saved conversations yet.</p>
-                </div>
-            ) : (
-                conversationHistory.map(record => (
-                    <div key={record.id} className="p-3 bg-light-bg dark:bg-dark-bg rounded-lg flex justify-between items-center gap-2">
-                        <button onClick={() => setSelectedConversation(record)} className="flex-grow text-left">
-                            <p className="font-semibold">Conversation on {new Date(record.timestamp).toLocaleDateString()}</p>
-                            <p className="text-xs text-gray-500">{new Date(record.timestamp).toLocaleTimeString()} · {record.messages.length} messages</p>
-                        </button>
-                        <button onClick={() => deleteConversation(record.id)} className="p-2 rounded-full hover:bg-red-500/10" aria-label="Delete conversation">
-                            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                        </button>
-                    </div>
-                ))
-            )}
-        </div>
-    );
-    
-    const HistoryDetailView = () => (
-        <div className="flex-grow overflow-y-auto">
-            <button onClick={() => setSelectedConversation(null)} className="flex items-center gap-2 font-semibold text-sm text-gray-500 dark:text-gray-400 mb-3">
-                <BackIcon className="w-4 h-4" /> Back to History
-            </button>
-             <div className="space-y-4">
-                 {selectedConversation?.messages.map((entry, index) => (
-                    <div key={index} className={`flex items-start gap-3 ${entry.speaker === 'You' ? 'justify-end' : 'justify-start'}`}>
-                        {entry.speaker === 'Zen' && <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center self-start"><AITutorIcon className="w-5 h-5 text-white" /></div>}
-                        <div className={`max-w-xs sm:max-w-sm md:max-w-md p-3 rounded-2xl ${entry.speaker === 'You' ? 'bg-primary text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none'}`}>
-                            <p className="whitespace-pre-wrap leading-relaxed">{entry.text}</p>
-                        </div>
-                        {entry.speaker === 'You' && <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 flex items-center justify-center self-start"><UserAvatarIcon className="w-5 h-5 text-gray-600 dark:text-gray-300"/></div>}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-    
-    const renderContent = () => {
-        if (currentView === 'history') {
-            return selectedConversation ? <HistoryDetailView /> : <HistoryListView />;
-        }
-        return <ChatView />;
-    }
-
-    return (
-        <div className="p-4 sm:p-6 h-[calc(100vh-160px)] flex flex-col">
-            <div className="max-w-4xl mx-auto w-full flex-grow flex flex-col min-h-0">
-                <PageHeader 
-                    title={currentView === 'chat' ? 'AI Conversation' : 'History'} 
-                    onBack={() => onNavigate(View.Home)} 
-                    rightContent={
-                        <button onClick={() => setCurrentView(v => v === 'chat' ? 'history' : 'chat')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            {currentView === 'chat' ? <HistoryIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" /> : <AIConversationIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
-                        </button>
-                    }
-                />
-                 <div className="flex-grow bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col overflow-hidden min-h-0">
-                    {renderContent()}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const TranslatorView: React.FC<{
-    onNavigate: NavigateFn,
-} & AudioProps> = ({ onNavigate, playAudio, currentlyPlayingUrl }) => {
-    const [inputText, setInputText] = useState('');
-    const [outputText, setOutputText] = useState('');
-    const [sourceLang, setSourceLang] = useState<'Vietnamese' | 'English'>('Vietnamese');
-    const [targetLang, setTargetLang] = useState<'Vietnamese' | 'English'>('English');
+const AddConversationModal: React.FC<{
+    onClose: () => void;
+    onAddConversation: (conversation: Conversation) => void;
+}> = ({ onClose, onAddConversation }) => {
+    const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('');
+    const [rawText, setRawText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleTranslate = useCallback(async () => {
-        const trimmedInput = inputText.trim();
-        if (!trimmedInput) {
-            setOutputText('');
+    const handleParse = async () => {
+        if (!title.trim() || !rawText.trim()) {
+            setError('Title and conversation text cannot be empty.');
             return;
         }
-
         setIsLoading(true);
         setError(null);
-        setOutputText('');
 
-        const result = await geminiService.translateText(trimmedInput, sourceLang, targetLang);
+        const result = await geminiService.parseAndTranslateConversation(rawText, title, category || 'Custom');
 
-        if (result.translation) {
-            setOutputText(result.translation);
+        if (result.conversation) {
+            const createTtsApiUrl = (text: string) => `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en&client=tw-ob`;
+            
+            const newConversation: Conversation = {
+                ...result.conversation,
+                id: `custom-${Date.now()}`,
+                isCustom: true,
+                lines: result.conversation.lines.map(line => ({
+                    ...line,
+                    audioUrl: createTtsApiUrl(line.sentence)
+                }))
+            };
+            onAddConversation(newConversation);
+            onClose();
         } else {
             setError(result.error || 'An unknown error occurred.');
         }
-
         setIsLoading(false);
-    }, [inputText, sourceLang, targetLang]);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-4 text-center">Add Custom Conversation</h2>
+                <div className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-4">
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Conversation Title (e.g., At the Airport)" className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none" />
+                    <input type="text" value={category} onChange={e => setCategory(e.target.value)} placeholder="Category (optional, e.g., Travel)" className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none" />
+                    <textarea
+                        value={rawText}
+                        onChange={(e) => setRawText(e.target.value)}
+                        placeholder={"Paste conversation text here. Format each line as:\nSpeaker: Sentence\n\ne.g.,\nReceptionist: How can I help you?\nCustomer: I'd like to check in."}
+                        rows={8}
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
+                    />
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                </div>
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-gray-600 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                    <button onClick={handleParse} disabled={isLoading} className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light transition-colors disabled:bg-gray-400 flex items-center justify-center">
+                        {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Analyze & Add'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ConversationListItem: React.FC<{
+    conversation: Conversation;
+    onDeleteConversation: (id: string) => void;
+} & Omit<AudioProps, 'setPlaybackSpeed'>> = ({ conversation, playAudio, currentlyPlayingUrl, onDeleteConversation }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    return (
+        <div className="p-4 bg-light-bg dark:bg-dark-bg rounded-xl">
+            <div onClick={() => setIsExpanded(!isExpanded)} className="flex justify-between items-center cursor-pointer">
+                <div>
+                    <h3 className="font-bold text-lg">{conversation.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{conversation.category} · {conversation.level}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {conversation.isCustom && (
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteConversation(conversation.id); }} className="p-2 rounded-full hover:bg-red-500/10" aria-label="Delete conversation">
+                            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                        </button>
+                    )}
+                    <ChevronDownIcon className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+            </div>
+            {isExpanded && (
+                <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3 space-y-3">
+                    {conversation.lines.map((line, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                            <span className="font-bold text-primary w-20 flex-shrink-0">{line.speaker}:</span>
+                            <div className="flex-grow">
+                                <p>{line.sentence}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 italic">{line.meaning}</p>
+                            </div>
+                            <button onClick={() => playAudio(line.audioUrl)} className={`p-2 rounded-full transition-colors ${currentlyPlayingUrl === line.audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                                <SpeakerIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+const FlashcardView: React.FC<{
+    onNavigate: NavigateFn;
+    practiceContext: PracticeContext;
+    customLessons: CustomLesson[];
+    allWords: Word[];
+    allSentences: Sentence[];
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ onNavigate, practiceContext, customLessons, allWords, allSentences, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
     
+    const [queue, setQueue] = useState<ReviewItem[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isFlipped, setIsFlipped] = useState(false);
+    
+    const deckItems = useMemo(() => {
+        let items: (Word | Sentence)[] = [];
+        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
+            const lesson = customLessons.find(l => l.id === practiceContext.lessonId);
+            if (lesson) {
+                const wordIdSet = new Set(lesson.vocabularyIds);
+                items = allWords.filter(w => wordIdSet.has(w.id));
+            }
+        } else {
+             const reviewQueue = srsService.getReviewQueue();
+             const wordMap = new Map(allWords.map(w => [w.id, w]));
+             const sentenceMap = new Map(allSentences.map(s => [s.id, s]));
+
+             items = reviewQueue.map(reviewItem => {
+                 if (reviewItem.type === 'word') return wordMap.get(reviewItem.id);
+                 return sentenceMap.get(reviewItem.id);
+             }).filter(item => item !== undefined) as (Word | Sentence)[];
+        }
+        // Simple shuffle
+        return items.sort(() => Math.random() - 0.5);
+    }, [practiceContext, customLessons, allWords, allSentences]);
+
+    const currentItem = deckItems[currentIndex];
+    
+    const handleNext = (quality?: number) => {
+        if (typeof quality === 'number' && practiceContext.mode === 'all') {
+            const reviewItem = srsService.getAllReviewItems().find(i => i.id === currentItem.id && i.type === ('ipa' in currentItem ? 'word' : 'sentence'));
+            if (reviewItem) {
+                srsService.updateReviewItem(reviewItem, quality);
+            }
+        }
+
+        setIsFlipped(false);
+        if (currentIndex < deckItems.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+        } else {
+             alert("Session complete!");
+             onNavigate(practiceContext.originView, practiceContext.mode === 'custom' ? { lessonId: practiceContext.lessonId } : undefined);
+        }
+    };
+
+    if (deckItems.length === 0) {
+        return (
+            <div className="p-4 sm:p-6 text-center">
+                 <PageHeader title="Flashcards" onBack={() => onNavigate(practiceContext.originView, practiceContext.mode === 'custom' ? { lessonId: practiceContext.lessonId } : undefined)} />
+                 <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-8">
+                    <p className="text-lg">No items to review right now. Great job!</p>
+                 </div>
+            </div>
+        );
+    }
+    
+    const isWord = 'ipa' in currentItem;
+    
+    const frontContent = (
+         <div className="text-center">
+            <h2 className="text-4xl font-bold mb-4">{isWord ? currentItem.word : currentItem.sentence}</h2>
+            {isWord && <p className="text-xl text-gray-500">{currentItem.ipa}</p>}
+             <button onClick={(e) => { e.stopPropagation(); playAudio(currentItem.audioUrl, playbackSpeed); }} className={`mx-auto mt-4 p-3 rounded-full transition-colors ${currentlyPlayingUrl === currentItem.audioUrl ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
+                <SpeakerIcon className="w-8 h-8" />
+            </button>
+         </div>
+    );
+    
+    const backContent = (
+         <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">{currentItem.meaning}</h2>
+            {isWord && (
+                <div className="text-gray-600 dark:text-gray-300">
+                    <p>"{currentItem.example.en}"</p>
+                    <p className="italic">"{currentItem.example.vi}"</p>
+                </div>
+            )}
+             <button onClick={(e) => { e.stopPropagation(); playAudio(currentItem.audioUrl, playbackSpeed); }} className={`mx-auto mt-4 p-3 rounded-full transition-colors ${currentlyPlayingUrl === currentItem.audioUrl ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>
+                <SpeakerIcon className="w-8 h-8" />
+            </button>
+         </div>
+    );
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="max-w-xl mx-auto">
+                <PageHeader title="Flashcards" onBack={() => onNavigate(practiceContext.originView, practiceContext.mode === 'custom' ? { lessonId: practiceContext.lessonId } : undefined)} rightContent={<div className="font-semibold">{currentIndex + 1} / {deckItems.length}</div>} />
+                 <div className="relative" style={{ perspective: '1000px' }}>
+                    <div onClick={() => setIsFlipped(!isFlipped)} className="w-full h-80 rounded-2xl cursor-pointer transition-transform duration-500" style={{ transformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : '' }}>
+                        <div className="absolute w-full h-full bg-white dark:bg-dark-card shadow-lg rounded-2xl flex items-center justify-center p-6" style={{ backfaceVisibility: 'hidden' }}>
+                            {frontContent}
+                        </div>
+                         <div className="absolute w-full h-full bg-white dark:bg-dark-card shadow-lg rounded-2xl flex items-center justify-center p-6" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                            {backContent}
+                        </div>
+                    </div>
+                </div>
+                
+                {isFlipped ? (
+                    <div className="mt-6 animate-fade-in-up">
+                        <p className="text-center text-gray-500 mb-3">How well did you know it?</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <button onClick={() => handleNext(0)} className="py-3 px-4 bg-red-500/80 text-white font-semibold rounded-lg hover:bg-red-600">Again</button>
+                            <button onClick={() => handleNext(3)} className="py-3 px-4 bg-amber-500/80 text-white font-semibold rounded-lg hover:bg-amber-600">Hard</button>
+                            <button onClick={() => handleNext(4)} className="py-3 px-4 bg-sky-500/80 text-white font-semibold rounded-lg hover:bg-sky-600">Good</button>
+                            <button onClick={() => handleNext(5)} className="py-3 px-4 bg-green-500/80 text-white font-semibold rounded-lg hover:bg-green-600">Easy</button>
+                        </div>
+                    </div>
+                ) : (
+                    <button onClick={() => setIsFlipped(true)} className="w-full mt-6 py-4 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-primary-light transition-colors">
+                        Show Answer
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const ShadowingPracticeModal: React.FC<{
+    item: Word | Sentence;
+    itemType: 'word' | 'sentence';
+    onClose: () => void;
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ item, itemType, onClose, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
+    const { isInitializing, isListening, transcript, finalTranscript, startListening, stopListening, hasRecognitionSupport, analyser, recognitionError } = useAudioRecorderAndVisualizer();
+    const [feedback, setFeedback] = useState<PronunciationFeedback | null>(null);
+    const [isChecking, setIsChecking] = useState(false);
+    
+    const targetText = itemType === 'word' ? (item as Word).word : (item as Sentence).sentence;
+    const ipa = itemType === 'word' ? (item as Word).ipa : (item as Sentence).ipa;
+
     useEffect(() => {
-        const debounceTimer = setTimeout(() => {
-            handleTranslate();
-        }, 500); // Debounce time of 500ms
-
-        return () => clearTimeout(debounceTimer);
-    }, [inputText, handleTranslate]);
-
-    const handleSwapLanguages = () => {
-        setSourceLang(targetLang);
-        setTargetLang(sourceLang);
-        setInputText(outputText); // Swap text as well
-    };
+        if (finalTranscript && !isListening) {
+            const check = async () => {
+                setIsChecking(true);
+                const result = await geminiService.checkPronunciation(targetText, finalTranscript);
+                setFeedback(result);
+                setIsChecking(false);
+            };
+            check();
+        }
+    }, [finalTranscript, isListening, targetText]);
     
-    const handleCopyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            // Optional: show a notification
-        }).catch(err => console.error('Failed to copy text: ', err));
+    const handleStart = () => {
+        setFeedback(null);
+        startListening();
     };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white dark:bg-dark-card rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-2 text-center">Shadowing Practice</h2>
+                <div className="p-4 bg-primary/10 rounded-lg text-center mb-4">
+                    <div className="flex justify-center items-center gap-2 flex-wrap">
+                        <h3 className="text-2xl font-bold text-primary dark:text-primary-light">{targetText}</h3>
+                        <button onClick={() => playAudio(item.audioUrl, playbackSpeed)} className={`p-2 rounded-full transition-colors ${currentlyPlayingUrl === item.audioUrl ? 'bg-primary text-white' : 'hover:bg-primary/20'}`}>
+                           <SpeakerIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+                    {ipa && <p className="text-gray-500 dark:text-gray-400 mt-1">{ipa}</p>}
+                </div>
+                
+                 <div className="flex-grow overflow-y-auto pr-2 -mr-2">
+                    {feedback && !feedback.isError && (
+                        <div className="text-center mb-4">
+                            <p className="font-semibold mb-2">Your Score:</p>
+                            <CircularProgress score={feedback.score} />
+                        </div>
+                    )}
+                    {isChecking && <p className="text-center text-gray-500">Analyzing your speech...</p>}
+                    {recognitionError && <p className="text-red-500 text-sm text-center my-2">{recognitionError}</p>}
+                    {transcript && <p className="text-center text-gray-600 dark:text-gray-300 my-2">You said: <span className="font-semibold">{transcript}</span></p>}
+                    
+                    {feedback && !feedback.isError && (
+                        <div className="space-y-3 mt-4 animate-fade-in">
+                           <p className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">{feedback.feedback}</p>
+                           {feedback.phoneticFeedback && feedback.phoneticFeedback.length > 0 && (
+                                <div className="p-3 bg-red-500/10 rounded-lg">
+                                    <h4 className="font-bold text-red-600 dark:text-red-400 mb-2">Phonetic Tips:</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {feedback.phoneticFeedback.map((item, i) => (
+                                            <li key={i}>For <strong>{item.word}</strong>, you said <span className="font-mono bg-red-200/50 dark:bg-red-800/50 px-1 rounded">{item.userPhoneme}</span> instead of <span className="font-mono bg-green-200/50 dark:bg-green-800/50 px-1 rounded">{item.correctPhoneme}</span>. {item.suggestion}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                           )}
+                           {feedback.rhythmAndIntonationFeedback && (Object.values(feedback.rhythmAndIntonationFeedback).some(v => v)) && (
+                                <div className="p-3 bg-sky-500/10 rounded-lg">
+                                    <h4 className="font-bold text-sky-600 dark:text-sky-400 mb-2">Prosody Feedback:</h4>
+                                    <ul className="space-y-1 text-sm list-disc list-inside">
+                                        {feedback.rhythmAndIntonationFeedback.rhythm && <li><strong>Rhythm:</strong> {feedback.rhythmAndIntonationFeedback.rhythm}</li>}
+                                        {feedback.rhythmAndIntonationFeedback.intonation && <li><strong>Intonation:</strong> {feedback.rhythmAndIntonationFeedback.intonation}</li>}
+                                        {feedback.rhythmAndIntonationFeedback.wordStress && <li><strong>Word Stress:</strong> {feedback.rhythmAndIntonationFeedback.wordStress}</li>}
+                                    </ul>
+                                </div>
+                           )}
+                           {feedback.linkingFeedback && (
+                                <div className="p-3 bg-violet-500/10 rounded-lg">
+                                    <h4 className="font-bold text-violet-600 dark:text-violet-400 mb-2">Linking Sounds:</h4>
+                                    <p className="text-sm">{feedback.linkingFeedback}</p>
+                                </div>
+                           )}
+                            {feedback.suggestions && feedback.suggestions.length > 0 && (
+                                <div className="p-3 bg-amber-500/10 rounded-lg">
+                                    <h4 className="font-bold text-amber-600 dark:text-amber-400 mb-2">Suggestions for Improvement:</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-sm">
+                                        {feedback.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                                    </ul>
+                                </div>
+                           )}
+                        </div>
+                    )}
+                     {feedback && feedback.isError && (
+                        <p className="text-center text-red-500 bg-red-500/10 p-3 rounded-lg">{feedback.feedback}</p>
+                    )}
+                </div>
+
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button onClick={onClose} className="w-full py-3 bg-gray-200 dark:bg-gray-600 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                        Close
+                    </button>
+                    <button 
+                        onClick={isListening ? stopListening : handleStart}
+                        disabled={!hasRecognitionSupport || isChecking || isInitializing}
+                        className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-light transition-colors disabled:bg-gray-400 flex items-center justify-center"
+                    >
+                        {isInitializing ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Preparing Mic...
+                            </div>
+                        ) : isListening ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                Listening... Speak now!
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <MicrophoneIcon className="w-5 h-5" />
+                                {feedback ? 'Try Again' : 'Start Shadowing'}
+                            </div>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const ShadowingView: React.FC<{
+    onNavigate: NavigateFn;
+    words: Word[];
+    sentences: Sentence[];
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ onNavigate, words, sentences, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
+    const [activeTab, setActiveTab] = useState('sentences');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [levelFilter, setLevelFilter] = useState<Level | 'all'>('all');
+    const [practiceItem, setPracticeItem] = useState<{ item: Word | Sentence, type: 'word' | 'sentence' } | null>(null);
+
+    const items = useMemo(() => (activeTab === 'words' ? words : sentences), [activeTab, words, sentences]);
+
+    const filteredItems = useMemo(() => {
+        return items.filter(item => {
+            const text = 'word' in item ? item.word : item.sentence;
+            const matchesSearch = text.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  item.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesLevel = levelFilter === 'all' || item.level === levelFilter;
+            return matchesSearch && matchesLevel;
+        });
+    }, [items, searchTerm, levelFilter]);
 
     return (
         <div className="p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
-                <PageHeader title="AI Translator" onBack={() => onNavigate(View.Home)} />
-                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 space-y-4">
-                    {/* Input Box */}
-                    <div className="relative">
-                        <div className="absolute top-3 left-4 text-sm font-semibold text-gray-500 dark:text-gray-400">{sourceLang}</div>
-                        <textarea
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            placeholder={`Enter text in ${sourceLang}...`}
-                            rows={5}
-                            className="w-full p-4 pt-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
-                        />
-                         <div className="absolute bottom-3 right-4">
-                            <button onClick={() => handleCopyToClipboard(inputText)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Copy input text">
-                                <CopyIcon className="w-5 h-5 text-gray-500" />
-                            </button>
+                <PageHeader title="Shadowing Practice" onBack={() => onNavigate(View.Home)} />
+                <div className="bg-white dark:bg-dark-card rounded-2xl shadow-lg">
+                     <div className="flex border-b border-gray-200 dark:border-gray-700 p-2">
+                        <button onClick={() => setActiveTab('sentences')} className={`w-1/2 py-2.5 font-semibold rounded-lg transition-colors ${activeTab === 'sentences' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Sentences</button>
+                        <button onClick={() => setActiveTab('words')} className={`w-1/2 py-2.5 font-semibold rounded-lg transition-colors ${activeTab === 'words' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Words</button>
+                    </div>
+                     <div className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                             <input
+                                type="text"
+                                placeholder={`Search ${activeTab}...`}
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
+                            />
+                            <select
+                                value={levelFilter}
+                                onChange={e => setLevelFilter(e.target.value as Level | 'all')}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
+                            >
+                                <option value="all">All Levels</option>
+                                {Object.values(Level).map(level => <option key={level} value={level}>{level}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-3 max-h-[65vh] overflow-y-auto">
+                           {filteredItems.map(item => (
+                               <div key={item.id} className="p-4 bg-light-bg dark:bg-dark-bg rounded-xl">
+                                   <div className="flex justify-between items-center">
+                                       <div>
+                                           <p className="font-semibold text-lg">{'word' in item ? item.word : item.sentence}</p>
+                                           <p className="text-gray-500 dark:text-gray-400">{item.meaning}</p>
+                                       </div>
+                                       <div className="flex items-center gap-1">
+                                            <button onClick={() => setPracticeItem({ item, type: activeTab === 'words' ? 'word' : 'sentence' })} className="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" aria-label={`Practice`}>
+                                                <MicrophoneIcon className="w-6 h-6 text-emerald-500" />
+                                            </button>
+                                            <PlaybackSpeedControl currentSpeed={playbackSpeed} onSpeedChange={setPlaybackSpeed} />
+                                            <button onClick={() => playAudio(item.audioUrl, playbackSpeed)} className={`p-3 rounded-full transition-colors ${currentlyPlayingUrl === item.audioUrl ? 'bg-primary text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                                                <SpeakerIcon className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                   </div>
+                               </div>
+                           ))}
                         </div>
                     </div>
-                    
-                    {/* Swap Button */}
-                    <div className="flex justify-center">
-                        <button onClick={handleSwapLanguages} className="p-3 rounded-full border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Swap languages">
-                            <SwapIcon className="w-6 h-6 text-primary" />
-                        </button>
-                    </div>
+                </div>
+            </div>
+            {practiceItem && (
+                <ShadowingPracticeModal
+                    item={practiceItem.item}
+                    itemType={practiceItem.type}
+                    onClose={() => setPracticeItem(null)}
+                    playAudio={playAudio}
+                    currentlyPlayingUrl={currentlyPlayingUrl}
+                    playbackSpeed={playbackSpeed}
+                    setPlaybackSpeed={setPlaybackSpeed}
+                />
+            )}
+        </div>
+    );
+};
 
-                    {/* Output Box */}
-                    <div className="relative">
-                        <div className="absolute top-3 left-4 text-sm font-semibold text-gray-500 dark:text-gray-400">{targetLang}</div>
-                        <div className="w-full p-4 pt-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg min-h-[148px]">
-                            {isLoading ? (
-                                 <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+
+const AITutorView: React.FC<{ onNavigate: NavigateFn }> = ({ onNavigate }) => {
+    const { isInitializing, isListening, transcript, finalTranscript, startListening, stopListening, hasRecognitionSupport, recognitionError } = useAudioRecorderAndVisualizer({ continuous: true, interimResults: true });
+    const [chatHistory, setChatHistory] = useState<Content[]>([]);
+    const [currentMessage, setCurrentMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [conversationLog, setConversationLog] = useState<ChatEntry[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(scrollToBottom, [conversationLog]);
+
+    useEffect(() => {
+        if (transcript) {
+            setCurrentMessage(transcript);
+        }
+    }, [transcript]);
+    
+    useEffect(() => {
+        if (finalTranscript) {
+            stopListening();
+            sendMessage(finalTranscript);
+        }
+    }, [finalTranscript]);
+
+    const sendMessage = async (message: string) => {
+        if (!message.trim()) return;
+
+        setIsSending(true);
+        const userEntry: ChatEntry = { speaker: 'You', text: message };
+        setConversationLog(prev => [...prev, userEntry]);
+        setCurrentMessage('');
+
+        try {
+            const newUserContent: Content = { role: 'user', parts: [{ text: message }] };
+            const historyWithNewMessage = [...chatHistory, newUserContent];
+            
+            const aiResponse = await geminiService.getAITutorResponse(historyWithNewMessage, message);
+
+            const aiEntry: ChatEntry = { speaker: 'Zen', text: aiResponse };
+            setConversationLog(prev => [...prev, aiEntry]);
+            
+            const newAiContent: Content = { role: 'model', parts: [{ text: aiResponse }] };
+            setChatHistory(prev => [...prev, newUserContent, newAiContent]);
+
+        } catch (error) {
+            console.error("AI Tutor Error:", error);
+            const errorEntry: ChatEntry = { speaker: 'Zen', text: "Sorry, I'm having a little trouble right now. Please try again in a moment." };
+            setConversationLog(prev => [...prev, errorEntry]);
+        } finally {
+            setIsSending(false);
+        }
+    };
+    
+    const handleMicClick = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    };
+
+    const handleSendText = () => {
+        if (currentMessage.trim()) {
+            sendMessage(currentMessage.trim());
+        }
+    };
+
+    return (
+        <div className="p-4 sm:p-6 h-[calc(100vh-11rem)] flex flex-col">
+            <div className="max-w-4xl mx-auto w-full flex flex-col flex-grow min-h-0">
+                <PageHeader title="AI Tutor" onBack={() => onNavigate(View.Home)} />
+                <div className="flex-grow bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 overflow-y-auto mb-4 relative">
+                    <div className="space-y-4">
+                        {conversationLog.map((entry, index) => (
+                             <div key={index} className={`flex items-start gap-3 ${entry.speaker === 'You' ? 'flex-row-reverse' : ''}`}>
+                                 <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${entry.speaker === 'Zen' ? 'bg-primary/20' : 'bg-secondary/20'}`}>
+                                    {entry.speaker === 'Zen' ? <AITutorIcon className="w-6 h-6 text-primary" /> : <UserAvatarIcon className="w-6 h-6 text-secondary" />}
                                 </div>
-                            ) : error ? (
-                                <p className="text-red-500">{error}</p>
-                            ) : (
-                                <p className="whitespace-pre-wrap">{outputText}</p>
-                            )}
-                        </div>
-                         <div className="absolute bottom-3 right-4 flex items-center gap-1">
-                            {targetLang === 'English' && outputText && (
-                                <button onClick={() => playAudio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(outputText)}&tl=en&client=tw-ob`)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Listen to translation">
-                                    <SpeakerIcon className="w-5 h-5 text-gray-500" />
-                                </button>
-                            )}
-                            <button onClick={() => handleCopyToClipboard(outputText)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Copy translated text">
-                                <CopyIcon className="w-5 h-5 text-gray-500" />
+                                <div className={`p-3 rounded-lg max-w-xs md:max-w-md ${entry.speaker === 'Zen' ? 'bg-gray-100 dark:bg-gray-700' : 'bg-primary text-white'}`}>
+                                    {entry.text}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                     <div ref={messagesEndRef} />
+                </div>
+                 {recognitionError && <p className="text-center text-red-500 text-sm mb-2">{recognitionError}</p>}
+                <div className="flex-shrink-0 flex items-center gap-3">
+                    <input 
+                        type="text"
+                        value={currentMessage}
+                        onChange={e => setCurrentMessage(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && handleSendText()}
+                        placeholder={isListening ? "Listening..." : "Type or click mic to talk..."}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none"
+                    />
+                     <button onClick={handleSendText} disabled={isSending || !currentMessage.trim()} className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white flex-shrink-0 disabled:bg-gray-400">
+                        <SendIcon className="w-6 h-6" />
+                    </button>
+                    <button
+                        onClick={handleMicClick}
+                        disabled={!hasRecognitionSupport || isSending}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white flex-shrink-0 transition-colors ${isListening ? 'bg-red-500' : 'bg-primary'} disabled:bg-gray-400`}
+                    >
+                         {isInitializing ? (
+                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : isListening ? (
+                            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        ) : (
+                            <MicrophoneIcon className="w-6 h-6" />
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AIConversationView: React.FC<{ onNavigate: NavigateFn }> = ({ onNavigate }) => {
+    const [isSessionActive, setIsSessionActive] = useState(false);
+    const [statusMessage, setStatusMessage] = useState("Tap start to begin conversation");
+    const [transcriptionHistory, setTranscriptionHistory] = useState<string[]>([]);
+    const [currentInputTranscription, setCurrentInputTranscription] = useState('');
+    const [currentOutputTranscription, setCurrentOutputTranscription] = useState('');
+    
+    const sessionPromise = useRef<Promise<any> | null>(null);
+    const outputAudioContextRef = useRef<AudioContext | null>(null);
+    const inputAudioContextRef = useRef<AudioContext | null>(null);
+    const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+    const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const audioSources = useRef<Set<AudioBufferSourceNode>>(new Set());
+    const nextStartTime = useRef(0);
+    
+    const API_KEY = process.env.API_KEY;
+
+    const stopConversation = useCallback(() => {
+        if (sessionPromise.current) {
+            sessionPromise.current.then(session => session.close());
+            sessionPromise.current = null;
+        }
+
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
+        if (mediaStreamSourceRef.current) {
+            mediaStreamSourceRef.current.disconnect();
+            mediaStreamSourceRef.current = null;
+        }
+        
+        if (scriptProcessorRef.current) {
+            scriptProcessorRef.current.disconnect();
+            scriptProcessorRef.current = null;
+        }
+
+        if (inputAudioContextRef.current && inputAudioContextRef.current.state !== 'closed') {
+            inputAudioContextRef.current.close();
+            inputAudioContextRef.current = null;
+        }
+
+        if (outputAudioContextRef.current && outputAudioContextRef.current.state !== 'closed') {
+            outputAudioContextRef.current.close();
+            outputAudioContextRef.current = null;
+        }
+        
+        audioSources.current.forEach(source => source.stop());
+        audioSources.current.clear();
+        nextStartTime.current = 0;
+
+        setIsSessionActive(false);
+        setStatusMessage("Conversation ended. Tap start to begin again.");
+    }, []);
+
+    const startConversation = useCallback(async () => {
+        if (isSessionActive || !API_KEY) return;
+        
+        setIsSessionActive(true);
+        setStatusMessage("Connecting to AI...");
+        setTranscriptionHistory([]);
+        setCurrentInputTranscription('');
+        setCurrentOutputTranscription('');
+
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
+        
+        outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        const outputNode = outputAudioContextRef.current.createGain();
+        outputNode.connect(outputAudioContextRef.current.destination);
+
+        sessionPromise.current = ai.live.connect({
+            model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+            callbacks: {
+                onopen: async () => {
+                    setStatusMessage("Connected! Start speaking.");
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        streamRef.current = stream;
+
+                        inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+                        const source = inputAudioContextRef.current.createMediaStreamSource(stream);
+                        mediaStreamSourceRef.current = source;
+                        
+                        const scriptProcessor = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
+                        scriptProcessorRef.current = scriptProcessor;
+
+                        scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
+                            const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+                            const int16 = new Int16Array(inputData.length);
+                            for (let i = 0; i < inputData.length; i++) {
+                                int16[i] = inputData[i] * 32768;
+                            }
+                            let binary = '';
+                            for (let i = 0; i < int16.buffer.byteLength; i++) {
+                                binary += String.fromCharCode(new Uint8Array(int16.buffer)[i]);
+                            }
+                            const pcmBlob: Blob = {
+                                data: btoa(binary),
+                                mimeType: 'audio/pcm;rate=16000',
+                            };
+                            if(sessionPromise.current) {
+                                sessionPromise.current.then((session) => {
+                                    session.sendRealtimeInput({ media: pcmBlob });
+                                });
+                            }
+                        };
+                        source.connect(scriptProcessor);
+                        scriptProcessor.connect(inputAudioContextRef.current.destination);
+                    } catch (err) {
+                        console.error("Microphone access error:", err);
+                        setStatusMessage("Microphone access denied.");
+                        stopConversation();
+                    }
+                },
+                onmessage: async (message: LiveServerMessage) => {
+                    if (message.serverContent?.outputTranscription) {
+                       setCurrentOutputTranscription(prev => prev + message.serverContent.outputTranscription.text);
+                    }
+                    if (message.serverContent?.inputTranscription) {
+                        setCurrentInputTranscription(prev => prev + message.serverContent.inputTranscription.text);
+                    }
+                    if (message.serverContent?.turnComplete) {
+                        const fullInput = currentInputTranscription;
+                        const fullOutput = currentOutputTranscription;
+                        setTranscriptionHistory(prev => [...prev, `You: ${fullInput}`, `Zen: ${fullOutput}`]);
+                        setCurrentInputTranscription('');
+                        setCurrentOutputTranscription('');
+                    }
+
+                    const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
+                    if (base64Audio && outputAudioContextRef.current) {
+                        const ctx = outputAudioContextRef.current;
+                        nextStartTime.current = Math.max(nextStartTime.current, ctx.currentTime);
+
+                        const binaryString = atob(base64Audio);
+                        const len = binaryString.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        
+                        const dataInt16 = new Int16Array(bytes.buffer);
+                        const frameCount = dataInt16.length;
+                        const audioBuffer = ctx.createBuffer(1, frameCount, 24000);
+                        const channelData = audioBuffer.getChannelData(0);
+                        for (let i = 0; i < frameCount; i++) {
+                            channelData[i] = dataInt16[i] / 32768.0;
+                        }
+
+                        const source = ctx.createBufferSource();
+                        source.buffer = audioBuffer;
+                        source.connect(outputNode);
+                        source.addEventListener('ended', () => {
+                            audioSources.current.delete(source);
+                        });
+                        source.start(nextStartTime.current);
+                        nextStartTime.current += audioBuffer.duration;
+                        audioSources.current.add(source);
+                    }
+                },
+                onerror: (e: ErrorEvent) => {
+                    console.error("Session error:", e);
+                    setStatusMessage("Session error. Please try again.");
+                    stopConversation();
+                },
+                onclose: () => {
+                    setStatusMessage("Session closed.");
+                    stopConversation();
+                },
+            },
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
+                inputAudioTranscription: {},
+                outputAudioTranscription: {},
+            },
+        });
+    }, [isSessionActive, API_KEY, stopConversation]);
+
+    useEffect(() => {
+        return () => {
+            stopConversation();
+        };
+    }, [stopConversation]);
+
+    return (
+        <div className="p-4 sm:p-6 h-[calc(100vh-11rem)] flex flex-col">
+            <div className="max-w-4xl mx-auto w-full flex flex-col flex-grow min-h-0">
+                <PageHeader title="AI Conversation" onBack={onNavigate.bind(null, View.Home)} />
+                <div className="flex-grow bg-white dark:bg-dark-card rounded-2xl shadow-lg p-4 sm:p-6 overflow-y-auto mb-4 relative">
+                    <div className="space-y-2 text-lg">
+                        {transcriptionHistory.map((line, index) => (
+                            <p key={index}>{line}</p>
+                        ))}
+                        {currentInputTranscription && <p>You: {currentInputTranscription}...</p>}
+                        {currentOutputTranscription && <p>Zen: {currentOutputTranscription}...</p>}
+                    </div>
+                </div>
+                <div className="flex-shrink-0 flex flex-col items-center gap-4">
+                    <p className="font-semibold text-lg">{statusMessage}</p>
+                    <button
+                        onClick={isSessionActive ? stopConversation : startConversation}
+                        className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg transition-all transform hover:scale-105 ${isSessionActive ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-light'}`}
+                    >
+                        {isSessionActive ? "Stop" : "Start"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ReviewView: React.FC<{ onNavigate: NavigateFn, customLessons: CustomLesson[] }> = ({ onNavigate, customLessons }) => {
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto">
+                <PageHeader title="Review & Practice" onBack={() => onNavigate(View.Home)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <PracticeCard 
+                        title="Quick Check"
+                        description="A quick multiple-choice quiz on all your learned vocabulary."
+                        icon={ReviewIcon}
+                        onClick={() => onNavigate(View.QuickCheck)}
+                    />
+                     <PracticeCard 
+                        title="Sentence Practice"
+                        description="Practice making your own sentences using your learned vocabulary."
+                        icon={AITutorIcon}
+                        onClick={() => onNavigate(View.SentencePractice, { practice: { mode: 'all', lessonId: null, originView: View.Review } })}
+                    />
+                    <PracticeCard 
+                        title="Fill in the Blank"
+                        description="Complete sentences by filling in the missing vocabulary word."
+                        icon={GrammarIcon}
+                        onClick={() => onNavigate(View.FillInTheBlank, { practice: { mode: 'all', lessonId: null, originView: View.Review } })}
+                    />
+                     <PracticeCard 
+                        title="Listening Practice"
+                        description="Listen to a word and choose the correct spelling."
+                        icon={ListeningIcon}
+                        onClick={() => onNavigate(View.ListeningPractice, { practice: { mode: 'all', lessonId: null, originView: View.Review } })}
+                    />
+                </div>
+                 <div className="mt-8">
+                    <h3 className="text-xl font-bold mb-4">Practice a Custom Lesson</h3>
+                    <div className="space-y-3">
+                        {customLessons.length > 0 ? customLessons.map(lesson => (
+                            <button key={lesson.id} onClick={() => onNavigate(View.LessonDetail, { lessonId: lesson.id })} className="w-full text-left p-4 bg-white dark:bg-dark-card rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                <div>
+                                    <h4 className="font-bold">{lesson.name}</h4>
+                                    <p className="text-sm text-gray-500">{lesson.vocabularyIds.length} words</p>
+                                </div>
+                                <ChevronDownIcon className="w-6 h-6 -rotate-90" />
                             </button>
-                        </div>
+                        )) : (
+                            <p className="text-center text-gray-500">No custom lessons created yet.</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -3732,4 +2726,470 @@ const TranslatorView: React.FC<{
     );
 };
 
-export default App;
+const PracticeCard: React.FC<{ title: string, description: string, icon: React.FC<{className?: string}>, onClick: () => void }> = ({ title, description, icon: Icon, onClick }) => (
+    <button onClick={onClick} className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg text-left hover:shadow-xl hover:-translate-y-1 transition-all">
+        <Icon className="w-10 h-10 text-primary mb-3" />
+        <h3 className="font-bold text-xl mb-1">{title}</h3>
+        <p className="text-gray-500 dark:text-gray-400">{description}</p>
+    </button>
+);
+
+const useQuizLogic = (items: Word[]) => {
+    const [questionIndex, setQuestionIndex] = useState(0);
+    const [score, setScore] = useState(0);
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [quizFinished, setQuizFinished] = useState(false);
+
+    const questions = useMemo(() => {
+        if (items.length < 4) return [];
+        return items.map(item => {
+            const correctAnswer = item.meaning;
+            let options = [correctAnswer];
+            let distractors = items.filter(d => d.id !== item.id);
+            while (options.length < 4 && distractors.length > 0) {
+                const randomIndex = Math.floor(Math.random() * distractors.length);
+                options.push(distractors[randomIndex].meaning);
+                distractors.splice(randomIndex, 1);
+            }
+            return {
+                word: item.word,
+                correctAnswer,
+                options: options.sort(() => Math.random() - 0.5),
+            };
+        });
+    }, [items]);
+
+    const currentQuestion = questions[questionIndex];
+
+    const handleAnswer = (answer: string) => {
+        setSelectedAnswer(answer);
+        const correct = answer === currentQuestion.correctAnswer;
+        setIsCorrect(correct);
+        if (correct) {
+            setScore(s => s + 1);
+        }
+    };
+
+    const handleNext = () => {
+        setSelectedAnswer(null);
+        setIsCorrect(null);
+        if (questionIndex < questions.length - 1) {
+            setQuestionIndex(i => i + 1);
+        } else {
+            setQuizFinished(true);
+        }
+    };
+
+    const restartQuiz = () => {
+        setQuestionIndex(0);
+        setScore(0);
+        setSelectedAnswer(null);
+        setIsCorrect(null);
+        setQuizFinished(false);
+    };
+
+    return {
+        questionIndex,
+        score,
+        selectedAnswer,
+        isCorrect,
+        quizFinished,
+        questions,
+        currentQuestion,
+        handleAnswer,
+        handleNext,
+        restartQuiz,
+    };
+};
+
+
+const QuickCheckView: React.FC<{ onNavigate: NavigateFn, allWords: Word[] }> = ({ onNavigate, allWords }) => {
+    const quizItems = useMemo(() => {
+        // Get 10 random words for the quiz
+        return [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
+    }, [allWords]);
+
+    const {
+        questionIndex, score, selectedAnswer, isCorrect, quizFinished,
+        questions, currentQuestion, handleAnswer, handleNext, restartQuiz
+    } = useQuizLogic(quizItems);
+    
+    if (quizItems.length < 4) {
+        return <div className="p-4 text-center">Not enough words to start a quiz. Learn at least 4 words.</div>
+    }
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="max-w-2xl mx-auto">
+                <PageHeader title="Quick Check" onBack={() => onNavigate(View.Review)} />
+                <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg">
+                    {quizFinished ? (
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold mb-4">Quiz Complete!</h3>
+                            <p className="text-xl">Your score: <span className="font-bold text-primary">{score} / {questions.length}</span></p>
+                            <button onClick={restartQuiz} className="mt-6 px-6 py-2 bg-primary text-white font-semibold rounded-lg">Play Again</button>
+                        </div>
+                    ) : (
+                        <div>
+                             <p className="text-right text-gray-500 font-semibold mb-2">{questionIndex + 1} / {questions.length}</p>
+                             <p className="text-center text-lg mb-2">What is the meaning of:</p>
+                             <h3 className="text-center text-4xl font-bold mb-6">{currentQuestion.word}</h3>
+                            <div className="space-y-3">
+                                {currentQuestion.options.map(option => {
+                                    const isSelected = selectedAnswer === option;
+                                    const isTheCorrectAnswer = option === currentQuestion.correctAnswer;
+                                    
+                                    let buttonClass = "w-full text-left p-4 rounded-lg border-2 transition-colors ";
+                                    if (isSelected) {
+                                        buttonClass += isCorrect ? "bg-green-100 dark:bg-green-900 border-green-500" : "bg-red-100 dark:bg-red-900 border-red-500";
+                                    } else if (selectedAnswer !== null && isTheCorrectAnswer) {
+                                        buttonClass += "bg-green-100 dark:bg-green-900 border-green-500";
+                                    } else {
+                                        buttonClass += "bg-light-bg dark:bg-dark-bg border-transparent hover:bg-gray-200 dark:hover:bg-gray-700";
+                                    }
+
+                                    return (
+                                        <button key={option} onClick={() => handleAnswer(option)} disabled={selectedAnswer !== null} className={buttonClass}>
+                                            {option}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {selectedAnswer !== null && (
+                                <button onClick={handleNext} className="w-full mt-6 py-3 bg-primary text-white font-bold rounded-lg">
+                                    {questionIndex < questions.length - 1 ? 'Next' : 'Finish'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SentencePracticeView: React.FC<{
+    onNavigate: NavigateFn;
+    practiceContext: PracticeContext;
+    customLessons: CustomLesson[];
+    allWords: Word[];
+}> = ({ onNavigate, practiceContext, customLessons, allWords }) => {
+    const [practiceWords, setPracticeWords] = useState<Word[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [userSentence, setUserSentence] = useState('');
+    const [feedback, setFeedback] = useState<SentenceFeedback | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        let items: Word[] = [];
+        if (practiceContext.mode === 'custom' && practiceContext.lessonId) {
+            const lesson = customLessons.find(l => l.id === practiceContext.lessonId);
+            if (lesson) {
+                const wordIdSet = new Set(lesson.vocabularyIds);
+                items = allWords.filter(w => wordIdSet.has(w.id));
+            }
+        } else {
+            // Select 10 random words from all learned words
+            items = [...srsService.getAllReviewItems()]
+                .filter(i => i.type === 'word' && i.repetitions > 0)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 10)
+                .map(i => allWords.find(w => w.id === i.id))
+                .filter((w): w is Word => w !== undefined);
+        }
+        setPracticeWords(items);
+    }, [practiceContext, customLessons, allWords]);
+    
+    const currentWord = practiceWords[currentIndex];
+
+    const handleCheckSentence = async () => {
+        if (!userSentence.trim() || !currentWord) return;
+        setIsLoading(true);
+        setFeedback(null);
+        const result = await geminiService.checkUserSentence(currentWord.word, userSentence);
+        setFeedback(result);
+        setIsLoading(false);
+    };
+
+    const handleNext = () => {
+        if (currentIndex < practiceWords.length - 1) {
+            setCurrentIndex(i => i + 1);
+            setUserSentence('');
+            setFeedback(null);
+        } else {
+            alert("Practice session complete!");
+            onNavigate(View.Review);
+        }
+    };
+    
+     const MistakeDisplay: React.FC<{ mistake: Mistake }> = ({ mistake }) => {
+        const colorClasses = {
+            'Grammar': 'bg-red-500/10 text-red-700 dark:text-red-300',
+            'Spelling': 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+            'Expression': 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+            'Usage': 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+            'Other': 'bg-gray-500/10 text-gray-700 dark:text-gray-300'
+        };
+        return (
+            <div className={`p-3 rounded-lg ${colorClasses[mistake.type]}`}>
+                 <div className="flex justify-between items-center mb-1">
+                    <strong className="text-sm">{mistake.type} Error</strong>
+                     <p className="text-xs font-mono p-1 bg-black/10 rounded-md">'{mistake.incorrectPart}'</p>
+                </div>
+                <p className="text-sm mb-1">{mistake.explanation}</p>
+                <p className="text-sm font-semibold">Suggestion: <span className="font-normal">{mistake.suggestion}</span></p>
+            </div>
+        );
+    };
+
+
+    if (practiceWords.length === 0) {
+        return (
+             <div className="p-4 text-center">
+                 <PageHeader title="Sentence Practice" onBack={() => onNavigate(View.Review)} />
+                 <p>Not enough words to practice. Learn some words first!</p>
+             </div>
+        );
+    }
+    
+    return (
+        <div className="p-4 sm:p-6">
+             <div className="max-w-2xl mx-auto">
+                <PageHeader title="Sentence Practice" onBack={() => onNavigate(View.Review)} rightContent={<div className="font-semibold">{currentIndex + 1} / {practiceWords.length}</div>} />
+                 <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg space-y-4">
+                     <div>
+                        <p className="text-lg text-center mb-1">Use the word below to make a sentence:</p>
+                        <div className="text-center p-3 bg-primary/10 rounded-lg">
+                           <h3 className="text-3xl font-bold text-primary">{currentWord.word}</h3>
+                           <p className="text-gray-500">{currentWord.meaning}</p>
+                        </div>
+                    </div>
+                     <textarea
+                        value={userSentence}
+                        onChange={(e) => setUserSentence(e.target.value)}
+                        placeholder="Write your sentence here..."
+                        rows={3}
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg focus:ring-2 focus:ring-primary outline-none resize-y"
+                     />
+                     <button onClick={handleCheckSentence} disabled={isLoading || !userSentence.trim()} className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-light disabled:bg-gray-400 flex items-center justify-center">
+                        {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Check Sentence'}
+                    </button>
+                    
+                     {feedback && (
+                        <div className="space-y-3 animate-fade-in">
+                            <div className={`p-3 rounded-lg text-center font-semibold ${feedback.isCorrect ? 'bg-green-500/10 text-green-700' : 'bg-red-500/10 text-red-700'}`}>
+                                {feedback.feedback}
+                            </div>
+                            {!feedback.isCorrect && (
+                                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                    <p className="font-semibold mb-1">Corrected Sentence:</p>
+                                    <p>{feedback.correctedSentence}</p>
+                                </div>
+                            )}
+                            {feedback.mistakes.length > 0 && (
+                                <div className="space-y-2">
+                                     {feedback.mistakes.map((mistake, i) => <MistakeDisplay key={i} mistake={mistake} />)}
+                                </div>
+                            )}
+                            <button onClick={handleNext} className="w-full py-3 bg-secondary text-white font-bold rounded-lg">
+                                {currentIndex < practiceWords.length - 1 ? 'Next Word' : 'Finish Session'}
+                            </button>
+                        </div>
+                     )}
+                 </div>
+            </div>
+        </div>
+    );
+};
+
+
+const FillInTheBlankView: React.FC<{ onNavigate: NavigateFn, practiceContext: PracticeContext, allWords: Word[] }> = ({ onNavigate, practiceContext, allWords }) => {
+    // This is a simplified version. A real implementation would be more robust.
+    const [questions, setQuestions] = useState<{ sentence: string; blank: string; answer: string }[]>([]);
+    
+    useEffect(() => {
+        // Simplified question generation
+        const practiceItems = [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
+        const generatedQuestions = practiceItems.map(word => {
+            const sentence = word.example.en;
+            const blankedSentence = sentence.replace(new RegExp(`\\b${word.word}\\b`, 'i'), '______');
+            return {
+                sentence: blankedSentence,
+                blank: `(${word.meaning})`,
+                answer: word.word
+            };
+        });
+        setQuestions(generatedQuestions);
+    }, [allWords]);
+
+    // Quiz logic would be similar to QuickCheckView
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [userInput, setUserInput] = useState('');
+    const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+
+    const currentQuestion = questions[currentIndex];
+
+    const checkAnswer = () => {
+        if (userInput.trim().toLowerCase() === currentQuestion.answer.toLowerCase()) {
+            setFeedback('correct');
+        } else {
+            setFeedback('incorrect');
+        }
+    };
+
+    const handleNext = () => {
+        setFeedback(null);
+        setUserInput('');
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex(i => i + 1);
+        } else {
+            alert("Practice complete!");
+            onNavigate(View.Review);
+        }
+    };
+
+    if (questions.length === 0) return <div>Loading...</div>;
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="max-w-2xl mx-auto">
+                <PageHeader title="Fill in the Blank" onBack={() => onNavigate(View.Review)} />
+                <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg space-y-4">
+                    <p className="text-right text-gray-500 font-semibold">{currentIndex + 1} / {questions.length}</p>
+                    <p className="text-lg text-center">{currentQuestion.sentence}</p>
+                    <p className="text-lg text-center font-semibold text-primary">{currentQuestion.blank}</p>
+                    <input 
+                        type="text"
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-light-bg dark:bg-dark-bg"
+                    />
+                    {feedback && (
+                        <div className={`p-3 rounded-lg text-center ${feedback === 'correct' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {feedback === 'correct' ? 'Correct!' : `Correct answer: ${currentQuestion.answer}`}
+                        </div>
+                    )}
+                    <button 
+                        onClick={feedback ? handleNext : checkAnswer}
+                        className="w-full py-3 bg-primary text-white font-bold rounded-lg"
+                    >
+                        {feedback ? 'Next' : 'Check'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ListeningPracticeView: React.FC<{
+    onNavigate: NavigateFn;
+    practiceContext: PracticeContext;
+    allWords: Word[];
+    playbackSpeed: number;
+    setPlaybackSpeed: (speed: number) => void;
+} & AudioProps> = ({ onNavigate, practiceContext, allWords, playAudio, currentlyPlayingUrl, playbackSpeed, setPlaybackSpeed }) => {
+    
+    const quizItems = useMemo(() => {
+        return [...allWords].sort(() => 0.5 - Math.random()).slice(0, 10);
+    }, [allWords]);
+
+     const {
+        questionIndex, score, selectedAnswer, isCorrect, quizFinished,
+        questions, currentQuestion, handleAnswer, handleNext, restartQuiz
+    } = useQuizLogic(quizItems);
+
+    if (quizItems.length < 4) {
+        return <div className="p-4 text-center">Not enough words to start a quiz. Learn at least 4 words.</div>
+    }
+
+    const currentWordItem = quizItems.find(w => w.word === currentQuestion.word)!;
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="max-w-2xl mx-auto">
+                <PageHeader title="Listening Practice" onBack={() => onNavigate(View.Review)} />
+                 <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-lg">
+                      {quizFinished ? (
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold mb-4">Quiz Complete!</h3>
+                            <p className="text-xl">Your score: <span className="font-bold text-primary">{score} / {questions.length}</span></p>
+                            <button onClick={restartQuiz} className="mt-6 px-6 py-2 bg-primary text-white font-semibold rounded-lg">Play Again</button>
+                        </div>
+                    ) : (
+                         <div>
+                            <p className="text-right text-gray-500 font-semibold mb-2">{questionIndex + 1} / {questions.length}</p>
+                            <p className="text-center text-lg mb-4">Listen and choose the correct word:</p>
+                             <div className="text-center mb-6">
+                                <button onClick={() => playAudio(currentWordItem.audioUrl)} className="p-4 bg-primary text-white rounded-full shadow-lg">
+                                    <SpeakerIcon className="w-8 h-8"/>
+                                </button>
+                            </div>
+                             <div className="space-y-3">
+                                {/* The quiz logic here is mismatched. It should check against the word, not the meaning. Let's fix it for this component. */}
+                                 {currentQuestion.options.map(option => {
+                                    const wordForOption = allWords.find(w => w.meaning === option)?.word || '';
+                                    const isSelected = selectedAnswer === option;
+                                    const isTheCorrectAnswer = option === currentQuestion.correctAnswer;
+                                    
+                                    let buttonClass = "w-full text-left p-4 rounded-lg border-2 transition-colors ";
+                                    if (isSelected) {
+                                        buttonClass += isCorrect ? "bg-green-100 dark:bg-green-900 border-green-500" : "bg-red-100 dark:bg-red-900 border-red-500";
+                                    } else if (selectedAnswer !== null && isTheCorrectAnswer) {
+                                        buttonClass += "bg-green-100 dark:bg-green-900 border-green-500";
+                                    } else {
+                                        buttonClass += "bg-light-bg dark:bg-dark-bg border-transparent hover:bg-gray-200 dark:hover:bg-gray-700";
+                                    }
+
+                                    return (
+                                        <button key={option} onClick={() => handleAnswer(option)} disabled={selectedAnswer !== null} className={buttonClass}>
+                                            {wordForOption}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                              {selectedAnswer !== null && (
+                                <button onClick={handleNext} className="w-full mt-6 py-3 bg-primary text-white font-bold rounded-lg">
+                                    {questionIndex < questions.length - 1 ? 'Next' : 'Finish'}
+                                </button>
+                            )}
+                         </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const PlaceholderView: React.FC<{ featureName: string; onNavigate: () => void }> = ({ featureName, onNavigate }) => (
+    <div className="p-4 text-center">
+        <PageHeader title={featureName} onBack={onNavigate} />
+        <h2 className="text-2xl font-bold mt-16">Coming Soon!</h2>
+        <p className="text-gray-500">{featureName} is under development.</p>
+    </div>
+);
+
+
+const BottomNav: React.FC<{ currentView: View, onNavigate: (view: View) => void }> = ({ currentView, onNavigate }) => {
+    const navItems = [
+        { view: View.Home, icon: HomeIcon, label: 'Home' },
+        { view: View.Vocabulary, icon: VocabularyIcon, label: 'Words' },
+        { view: View.Sentences, icon: SentencesIcon, label: 'Sentences' },
+        { view: View.MyLessons, icon: BookIcon, label: 'My Lessons' },
+        { view: View.Stats, icon: StatsIcon, label: 'Stats' },
+    ];
+
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-dark-card/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 shadow-t-lg z-40">
+            <div className="flex justify-around max-w-5xl mx-auto">
+                {navItems.map(item => (
+                    <button key={item.label} onClick={() => onNavigate(item.view)} className={`flex-1 flex flex-col items-center justify-center pt-2 pb-1 transition-colors duration-200 ${currentView === item.view ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light'}`}>
+                        <item.icon className="w-7 h-7" />
+                        <span className="text-xs font-semibold mt-1">{item.label}</span>
+                    </button>
+                ))}
+            </div>
+        </nav>
+    );
+};
