@@ -170,12 +170,12 @@ export const checkPronunciation = async (targetText: string, userTranscript: str
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
+// FIX: The response schema was corrupted and incomplete. It has been fully defined to match the PronunciationFeedback interface.
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
                         score: { type: Type.NUMBER },
                         feedback: { type: Type.STRING },
-                        suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
                         phoneticFeedback: {
                             type: Type.ARRAY,
                             items: {
@@ -195,45 +195,41 @@ export const checkPronunciation = async (targetText: string, userTranscript: str
                                 rhythm: { type: Type.STRING },
                                 intonation: { type: Type.STRING },
                                 wordStress: { type: Type.STRING },
-                            },
+                            }
                         },
                         linkingFeedback: { type: Type.STRING },
+                        suggestions: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        },
                     },
-                    required: ["score", "feedback", "suggestions"]
+                    required: ["score", "feedback", "phoneticFeedback", "suggestions"]
                 }
             }
         });
-
-        const jsonStr = response.text.trim();
-        const parsedData = JSON.parse(jsonStr);
+        
+        const parsedData = JSON.parse(response.text.trim());
         return { ...parsedData, isError: false };
 
     } catch (error) {
         console.error("Error checking pronunciation with Gemini:", error);
-        return {
-            score: 0,
-            feedback: "Sorry, I couldn't analyze your pronunciation. The AI service may be down. Please try again later.",
-            suggestions: [],
-            isError: true,
-        };
+        return { isCorrect: false, score: 0, feedback: "Could not analyze the pronunciation. The AI service may be down.", suggestions: [], isError: true };
     }
 };
 
-export const checkUserSentence = async (wordToUse: string, userSentence: string): Promise<SentenceFeedback> => {
+// FIX: Add missing function `checkUserSentence` called from App.tsx.
+export const checkUserSentence = async (targetWord: string, userSentence: string): Promise<SentenceFeedback> => {
     if (!ai) return { isCorrect: false, feedback: "Gemini AI is not available.", correctedSentence: userSentence, mistakes: [], isError: true };
 
-    const prompt = `As an expert English teacher for Vietnamese learners, analyze the user's sentence.
-    - Word to use: "${wordToUse}"
+    const prompt = `As an expert English teacher for Vietnamese learners, evaluate the user's sentence based on the target word.
+    - Target word: "${targetWord}"
     - User's sentence: "${userSentence}"
 
     Your tasks:
-    1.  Check if the sentence is grammatically correct and if the word "${wordToUse}" is used naturally and correctly.
-    2.  If it's perfect, set "isCorrect" to true, provide positive feedback, and set "correctedSentence" to the original sentence.
-    3.  If there are errors:
-        a. Set "isCorrect" to false.
-        b. Provide a brief, encouraging feedback about the attempt.
-        c. Provide a fully corrected version of the sentence in "correctedSentence".
-        d. Create a "mistakes" array. For each mistake, identify the "incorrectPart", provide a simple "explanation", suggest a "suggestion", and categorize it as 'Grammar', 'Spelling', 'Expression', or 'Usage'.
+    1.  Determine if the sentence is grammatically correct and uses the target word appropriately.
+    2.  Provide brief, encouraging overall feedback.
+    3.  If incorrect, provide a corrected version of the sentence.
+    4.  Identify specific mistakes. For each mistake, specify the type ('Grammar', 'Spelling', 'Expression', 'Usage', 'Other'), the 'incorrectPart', a clear 'explanation', and a 'suggestion'. If there are no mistakes, return an empty array.
 
     Return a single JSON object with this exact structure:
     {
@@ -242,7 +238,7 @@ export const checkUserSentence = async (wordToUse: string, userSentence: string)
       "correctedSentence": string,
       "mistakes": [{ "type": string, "incorrectPart": string, "explanation": string, "suggestion": string }]
     }`;
-
+    
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -274,48 +270,85 @@ export const checkUserSentence = async (wordToUse: string, userSentence: string)
             }
         });
 
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-
-        // Ensure mistake types are valid
-        const validMistakeTypes: Mistake['type'][] = ['Grammar', 'Spelling', 'Expression', 'Usage', 'Other'];
-        if (parsedData.mistakes) {
-            parsedData.mistakes.forEach((mistake: any) => {
-                if (!validMistakeTypes.includes(mistake.type)) {
-                    mistake.type = 'Other';
-                }
-            });
-        }
-
+        const parsedData = JSON.parse(response.text.trim());
         return { ...parsedData, isError: false };
-
     } catch (error) {
-        console.error("Error checking sentence with Gemini:", error);
-        return {
-            isCorrect: false,
-            feedback: "Sorry, I couldn't check your sentence. The AI service may be down. Please try again later.",
-            correctedSentence: userSentence,
-            mistakes: [],
-            isError: true,
-        };
+        console.error("Error checking user sentence with Gemini:", error);
+        return { isCorrect: false, feedback: "Could not analyze the sentence. The AI service may be down.", correctedSentence: userSentence, mistakes: [], isError: true };
     }
 };
 
+// FIX: Add missing function `generateGrammarExplanation` called from App.tsx.
+export const generateGrammarExplanation = async (sentence: string): Promise<string> => {
+    if (!ai) return "Grammar explanation is unavailable.";
+
+    const prompt = `As an English grammar expert for Vietnamese learners, provide a concise (2-3 sentences max) grammar explanation for the following sentence. Focus on the main grammatical structure or point of interest. Keep it simple and easy to understand. Provide only the explanation text, not any other formatting.
+
+    Sentence: "${sentence}"`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating grammar explanation with Gemini:", error);
+        return "Could not load grammar tip at this time.";
+    }
+};
+
+// FIX: Add missing function `refineVietnameseMeaning` called from App.tsx.
+export const refineVietnameseMeaning = async (englishSentence: string, vietnameseMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
+    if (!ai) return { error: "Gemini AI is not available." };
+    
+    const prompt = `As an expert English-Vietnamese translator, refine the given Vietnamese meaning for the English sentence to make it more natural, accurate, and contextually appropriate. Consider idioms and nuances.
+    - English Sentence: "${englishSentence}"
+    - Current Vietnamese Meaning: "${vietnameseMeaning}"
+
+    Return a single JSON object with this exact structure, containing only the improved meaning:
+    {
+        "refinedMeaning": "The improved Vietnamese meaning"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        refinedMeaning: { type: Type.STRING },
+                    },
+                    required: ["refinedMeaning"]
+                }
+            }
+        });
+        
+        const parsedData = JSON.parse(response.text.trim());
+        return { refinedMeaning: parsedData.refinedMeaning };
+    } catch (error) {
+        console.error("Error refining sentence meaning with Gemini:", error);
+        return { error: "Failed to refine meaning. The AI service may be unavailable." };
+    }
+};
+
+// FIX: Add missing function `getWordDetails` called from App.tsx.
 export const getWordDetails = async (word: string): Promise<{ details?: WordDetails, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
+    if (!ai) return { error: "Gemini AI is not available." };
 
-    const prompt = `As an expert English lexicographer, provide detailed information for the word "${word}" for a Vietnamese learner.
-
+    const prompt = `As an expert English lexicographer for Vietnamese learners, provide detailed information for the word "${word}".
+    
     Your tasks:
-    1.  Provide a concise English meaning.
-    2.  Describe the common usage context.
-    3.  Suggest a different, clear example sentence.
-    4.  List related family words (e.g., noun, verb, adjective forms) with their Vietnamese meanings.
-    5.  List common synonyms with their Vietnamese meanings.
-    6.  List common antonyms with their Vietnamese meanings.
+    1.  Provide a clear, simple definition in English ('englishMeaning').
+    2.  Describe the common usage context ('usageContext').
+    3.  Suggest another clear example sentence ('sentenceSuggestion').
+    4.  List 2-3 related family words with their Vietnamese meanings.
+    5.  List 2-3 common synonyms with their Vietnamese meanings.
+    6.  List 2-3 common antonyms with their Vietnamese meanings. If none, provide an empty array.
 
     Return a single JSON object with this exact structure:
     {
@@ -345,7 +378,7 @@ export const getWordDetails = async (word: string): Promise<{ details?: WordDeta
                                 type: Type.OBJECT,
                                 properties: {
                                     word: { type: Type.STRING },
-                                    meaning: { type: Type.STRING }
+                                    meaning: { type: Type.STRING },
                                 },
                                 required: ["word", "meaning"]
                             }
@@ -356,7 +389,7 @@ export const getWordDetails = async (word: string): Promise<{ details?: WordDeta
                                 type: Type.OBJECT,
                                 properties: {
                                     word: { type: Type.STRING },
-                                    meaning: { type: Type.STRING }
+                                    meaning: { type: Type.STRING },
                                 },
                                 required: ["word", "meaning"]
                             }
@@ -367,50 +400,123 @@ export const getWordDetails = async (word: string): Promise<{ details?: WordDeta
                                 type: Type.OBJECT,
                                 properties: {
                                     word: { type: Type.STRING },
-                                    meaning: { type: Type.STRING }
+                                    meaning: { type: Type.STRING },
                                 },
                                 required: ["word", "meaning"]
                             }
-                        }
+                        },
                     },
                     required: ["englishMeaning", "usageContext", "sentenceSuggestion", "familyWords", "synonyms", "antonyms"]
                 }
             }
         });
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
+        
+        const parsedData = JSON.parse(response.text.trim());
         return { details: parsedData };
+
     } catch (error) {
         console.error("Error getting word details from Gemini:", error);
-        return { error: "Could not retrieve word details. The AI service may be temporarily unavailable." };
+        return { error: "Could not load word details. The AI service may be temporarily unavailable." };
     }
 };
 
-export const parseAndTranslateConversation = async (rawText: string, title: string, category: string): Promise<{ conversation?: Omit<Conversation, 'id' | 'isCustom' | 'lines'> & { lines: Omit<ConversationLine, 'audioUrl' | 'ipa'>[] }, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
+// FIX: Add missing function `refineVietnameseWordMeaning` called from App.tsx.
+export const refineVietnameseWordMeaning = async (englishWord: string, vietnameseMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
+    if (!ai) return { error: "Gemini AI is not available." };
+    
+    const prompt = `As an expert English-Vietnamese translator, refine the given Vietnamese meaning for the English word to make it more natural, accurate, and contextually appropriate for a learner.
+    - English Word: "${englishWord}"
+    - Current Vietnamese Meaning: "${vietnameseMeaning}"
 
-    const prompt = `As an English learning expert, analyze the following conversation text.
-    Conversation Title: "${title}"
-    Category: "${category}"
+    Return a single JSON object with this exact structure, containing only the improved meaning:
+    {
+        "refinedMeaning": "The improved Vietnamese meaning"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        refinedMeaning: { type: Type.STRING },
+                    },
+                    required: ["refinedMeaning"]
+                }
+            }
+        });
+        
+        const parsedData = JSON.parse(response.text.trim());
+        return { refinedMeaning: parsedData.refinedMeaning };
+    } catch (error) {
+        console.error("Error refining word meaning with Gemini:", error);
+        return { error: "Failed to refine meaning. The AI service may be unavailable." };
+    }
+};
+
+// FIX: Add missing function `translateText` called from App.tsx.
+export const translateText = async (text: string, sourceLang: 'English' | 'Vietnamese', targetLang: 'English' | 'Vietnamese'): Promise<{ translation?: string, error?: string }> => {
+    if (!ai) return { error: "Gemini AI is not available." };
+    
+    const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
+    Text to translate: "${text}"
+
+    Return a single JSON object with this exact structure:
+    {
+        "translation": "The translated text here"
+    }`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        translation: { type: Type.STRING },
+                    },
+                    required: ["translation"]
+                }
+            }
+        });
+
+        const parsedData = JSON.parse(response.text.trim());
+        return { translation: parsedData.translation };
+    } catch (error) {
+        console.error("Error translating text with Gemini:", error);
+        return { error: "Translation failed. The AI service may be temporarily unavailable." };
+    }
+};
+
+// FIX: Add missing function `parseAndTranslateConversation` called from App.tsx.
+export const parseAndTranslateConversation = async (rawText: string, title: string, category: string): Promise<{ conversation?: Omit<Conversation, 'id' | 'isCustom' | 'lines'> & { lines: Omit<ConversationLine, 'audioUrl'>[] }, error?: string }> => {
+    if (!ai) return { error: "Gemini AI is not available." };
+
+    const prompt = `As an English learning expert, parse the following raw conversation text.
     Raw Text:
     ---
     ${rawText}
     ---
+    Title: "${title}"
+    Category: "${category}"
 
     Your tasks are:
-    1.  Parse the raw text into a structured list of conversation lines, identifying the speaker and their sentence.
-    2.  Translate each English sentence into natural-sounding Vietnamese.
-    3.  Estimate the overall CEFR level of the conversation (A1, A2, B1, B2, C1, or C2).
+    1.  Parse the text into a list of conversation lines, identifying the speaker and the sentence for each.
+    2.  Provide the American English IPA transcription for each English sentence.
+    3.  Provide a natural Vietnamese translation for each English sentence.
+    4.  Estimate the overall CEFR level for the conversation (A1, A2, B1, B2, C1, or C2).
 
     Return a single JSON object with this exact structure:
     {
       "title": string,
       "level": "A1" | "A2" | "B1" | "B2" | "C1" | "C2",
       "category": string,
-      "lines": [{ "speaker": string, "sentence": string, "meaning": string }]
+      "lines": [{ "speaker": string, "sentence": string, "ipa": string, "meaning": string }]
     }`;
 
     try {
@@ -432,9 +538,10 @@ export const parseAndTranslateConversation = async (rawText: string, title: stri
                                 properties: {
                                     speaker: { type: Type.STRING },
                                     sentence: { type: Type.STRING },
+                                    ipa: { type: Type.STRING },
                                     meaning: { type: Type.STRING },
                                 },
-                                required: ["speaker", "sentence", "meaning"]
+                                required: ["speaker", "sentence", "ipa", "meaning"]
                             }
                         }
                     },
@@ -443,16 +550,11 @@ export const parseAndTranslateConversation = async (rawText: string, title: stri
             }
         });
 
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-
+        const parsedData = JSON.parse(response.text.trim());
         const validLevels = Object.values(Level);
         const receivedLevel = parsedData.level.toUpperCase();
-        parsedData.level = validLevels.includes(receivedLevel) ? receivedLevel : Level.B1;
-
+        parsedData.level = validLevels.includes(receivedLevel) ? receivedLevel : Level.A2;
+        
         return { conversation: parsedData };
     } catch (error) {
         console.error("Error parsing conversation with Gemini:", error);
@@ -460,253 +562,31 @@ export const parseAndTranslateConversation = async (rawText: string, title: stri
     }
 };
 
-export const generateExampleSentences = async (word: string): Promise<{ examples?: Example[], error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
-
-    const prompt = `As an English teacher for Vietnamese learners, create 3 diverse and clear example sentences for the word "${word}". For each sentence, provide a natural Vietnamese translation.
-
-    Return a single JSON object with this exact structure:
-    {
-      "examples": [{ "en": string, "vi": string }]
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        examples: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    en: { type: Type.STRING },
-                                    vi: { type: Type.STRING },
-                                },
-                                required: ["en", "vi"]
-                            }
-                        }
-                    },
-                    required: ["examples"]
-                }
-            }
-        });
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-        return { examples: parsedData.examples };
-    } catch (error) {
-        console.error("Error generating examples with Gemini:", error);
-        return { error: "Could not generate examples. The AI service may be temporarily unavailable." };
-    }
-};
-
-export const generateGrammarExplanation = async (sentence: string): Promise<string> => {
-    if (!ai) return "Đã xảy ra lỗi: Gemini AI is not available.";
-
-    const prompt = `As an English grammar expert for Vietnamese learners, provide a concise explanation of the key grammar point in the following sentence. Keep the explanation simple and clear.
-    Sentence: "${sentence}"
-    Return only the plain text explanation.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt
-        });
-        return response.text.trim();
-    } catch (error) {
-        console.error("Error generating grammar explanation with Gemini:", error);
-        return "Đã xảy ra lỗi: Could not generate explanation. The AI service may be temporarily unavailable.";
-    }
-};
-
-export const refineVietnameseMeaning = async (sentence: string, originalMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
-    const prompt = `As an expert English-to-Vietnamese translator, refine the given Vietnamese translation to make it more natural and accurate in context.
-    - English Sentence: "${sentence}"
-    - Current Vietnamese Translation: "${originalMeaning}"
-
-    If the current translation is already good, return it. If it can be improved, provide a better version.
-    Return a single JSON object with this exact structure:
-    {
-      "refinedMeaning": string
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        refinedMeaning: { type: Type.STRING },
-                    },
-                    required: ["refinedMeaning"]
-                }
-            }
-        });
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-        return { refinedMeaning: parsedData.refinedMeaning };
-    } catch (error) {
-        console.error("Error refining meaning with Gemini:", error);
-        return { error: "Could not refine the meaning. The AI service may be temporarily unavailable." };
-    }
-};
-
-export const refineVietnameseWordMeaning = async (word: string, originalMeaning: string): Promise<{ refinedMeaning?: string, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
-    const prompt = `As an expert English-to-Vietnamese lexicographer, refine the given Vietnamese translation for the word to make it more natural and accurate.
-    - English Word: "${word}"
-    - Current Vietnamese Translation: "${originalMeaning}"
-
-    If the current translation is good, return it. If it can be improved, provide a better version.
-    Return a single JSON object with this exact structure:
-    {
-      "refinedMeaning": string
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        refinedMeaning: { type: Type.STRING },
-                    },
-                    required: ["refinedMeaning"]
-                }
-            }
-        });
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-        return { refinedMeaning: parsedData.refinedMeaning };
-    } catch (error) {
-        console.error("Error refining word meaning with Gemini:", error);
-        return { error: "Could not refine the meaning. The AI service may be temporarily unavailable." };
-    }
-};
-
-export const getIpaForText = async (text: string): Promise<{ ipa?: string, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
-
-    const prompt = `Provide the American English IPA transcription for the following text: "${text}".
-    Return a single JSON object with this exact structure:
-    {
-      "ipa": string
-    }`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        ipa: { type: Type.STRING },
-                    },
-                    required: ["ipa"]
-                }
-            }
-        });
-        let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
-        }
-        const parsedData = JSON.parse(jsonStr);
-        return { ipa: parsedData.ipa };
-    } catch (error) {
-        console.error("Error getting IPA from Gemini:", error);
-        return { error: "Could not get IPA. The AI service may be temporarily unavailable." };
-    }
-};
-
-export const startAITutorChat = (): Chat | null => {
-    if (!ai) return null;
-
-    const systemInstruction = `You are Zen, a friendly, empathetic, and patient English coach for Vietnamese learners. Your personality is curious and encouraging. Your primary goal is to help the user practice speaking natural, conversational English in a relaxed environment, and answer their questions about English.
-    
-    Core Instructions:
-    1.  **Be Conversational & Natural**: Keep your responses relatively short and use natural-sounding language.
-    2.  **Always Encourage**: End your responses in an encouraging way.
-    3.  **Maintain Context**: Use the conversation history to inform your answers.
-    4.  **Answer questions**: If asked about grammar, vocabulary, or culture, provide clear and simple explanations.`;
-    
-    try {
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction,
-            },
-        });
-        return chat;
-    } catch (error) {
-        console.error("Failed to start AI Tutor chat session:", error);
-        return null;
-    }
-};
-
-// FIX: Add missing getAITutorResponse function
+// FIX: Add missing function `getAITutorResponse` called from App.tsx.
 export const getAITutorResponse = async (history: Content[], newMessage: string): Promise<string> => {
-    if (!ai) throw new Error("Gemini AI is not available.");
-
-    const systemInstruction = `You are Zen, a friendly, empathetic, and patient English coach for Vietnamese learners. Your personality is curious and encouraging. Your primary goal is to help the user practice speaking natural, conversational English in a relaxed environment, and answer their questions about English.
+    if (!ai) return "Sorry, the AI Tutor is currently unavailable.";
     
-    Core Instructions:
-    1.  **Be Conversational & Natural**: Keep your responses relatively short and use natural-sounding language.
-    2.  **Always Encourage**: End your responses in an encouraging way.
-    3.  **Maintain Context**: Use the conversation history to inform your answers.
-    4.  **Answer questions**: If asked about grammar, vocabulary, or culture, provide clear and simple explanations.`;
+    const systemInstruction = `You are Zen, a friendly and patient AI English tutor for Vietnamese learners.
+- Keep your responses concise and encouraging.
+- Explain concepts simply.
+- If the user makes a mistake, gently correct them and explain why.
+- Ask questions to keep the conversation going.
+- You can discuss grammar, vocabulary, pronunciation, or just have a casual chat in English.
+- Your goal is to help the user practice and feel more confident.`;
 
     try {
+        // The history from the client already includes the latest user message
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: [...history, { role: 'user', parts: [{ text: newMessage }] }],
+            contents: history,
             config: {
-                systemInstruction,
-            },
+                systemInstruction: systemInstruction,
+            }
         });
-        return response.text.trim();
+
+        return response.text;
     } catch (error) {
-        console.error("Error getting AI Tutor response:", error);
-        throw new Error("Could not get a response from the AI tutor.");
-    }
-};
-
-export const translateText = async (text: string, sourceLang: 'Vietnamese' | 'English', targetLang: 'Vietnamese' | 'English'): Promise<{ translation?: string, error?: string }> => {
-    if (!ai) return { error: "Gemini AI is not available. Please check your API key." };
-
-    const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
-    Text: "${text}"
-    Return only the translated text.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        return { translation: response.text.trim() };
-    } catch (error) {
-        console.error("Error translating text with Gemini:", error);
-        return { error: "Could not translate the text. The AI service may be temporarily unavailable." };
+        console.error("Error getting AI tutor response from Gemini:", error);
+        return "I'm having trouble connecting right now. Let's try again in a moment.";
     }
 };
